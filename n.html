@@ -30,6 +30,7 @@
 </head>
 <body class="text-slate-800 antialiased overflow-x-hidden">
 
+    <!-- Global App State -->
     <script>
         const AppState = {
             mode: 'user', 
@@ -119,7 +120,7 @@
         
         <div id="loading-overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#f8fafc]">
             <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
-            <p class="text-slate-500 text-sm font-medium animate-pulse">Connecting to Server...</p>
+            <p class="text-slate-500 text-sm font-medium animate-pulse" id="loading-text">Connecting to Server...</p>
         </div>
 
         <!-- ==================== USER VIEWS ==================== -->
@@ -524,28 +525,40 @@
         const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
         const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-        // പുതിയ ഡാറ്റാബേസ് പാത്ത്: /madrasa/public/data/...
         const getPublicRef = (colName) => collection(db, 'madrasa', 'public', 'data', colName);
         const getDocRef = (type, id) => doc(db, 'madrasa', 'public', 'data', type, id);
 
         async function initApp() {
-            showLoading(true);
-            try { await signInAnonymously(auth); } 
-            catch (error) { console.error("Auth Error:", error); showAlert("Error", "Could not connect to database.", "error"); showLoading(false); }
+            showLoading(true, "Connecting to Server...");
+            try { 
+                await signInAnonymously(auth); 
+                // Rest of the flow continues in onAuthStateChanged
+            } 
+            catch (error) { 
+                console.error("Auth Error:", error); 
+                showLoading(false);
+                showAlert("Connection Error", "Failed to connect to Firebase. Please check if Anonymous Sign-in is enabled in Firebase Console and your domain is whitelisted.", "error"); 
+            }
         }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await loadGlobalConfig();
-                setupGlobalClassSelector();
-                updateUIForMode();
-                showLoading(false);
+                try {
+                    showLoading(true, "Loading Configuration...");
+                    await loadGlobalConfig();
+                    setupGlobalClassSelector();
+                    updateUIForMode();
+                } catch(e) {
+                    console.error("DB Error:", e);
+                    showAlert("Database Error", "Failed to fetch data from Firestore. Check your security rules.", "error");
+                } finally {
+                    showLoading(false);
+                }
             }
         });
         initApp();
 
-        // UI & Navigation
         window.toggleMenu = function() {
             const menu = document.getElementById('dropdown-menu');
             const overlay = document.getElementById('menu-overlay');
@@ -568,7 +581,6 @@
             document.getElementById(viewId).classList.remove('hidden');
             AppState.currentView = viewId;
             
-            // Check Class selection for Admin Views
             if(!AppState.currentClassId && viewId.startsWith('view-admin') && viewId !== 'view-admin-setup') {
                 document.getElementById(viewId.replace('view-', '') + '-content').classList.add('hidden');
                 document.getElementById(viewId.replace('view-', '') + '-empty').classList.remove('hidden');
@@ -707,11 +719,16 @@
             modal.classList.remove('hidden');
             setTimeout(() => document.getElementById('alert-content').classList.remove('scale-95'), 10);
         };
+        
         window.closeAlert = function() {
             document.getElementById('alert-content').classList.add('scale-95');
             setTimeout(() => document.getElementById('alert-modal').classList.add('hidden'), 200);
         };
-        function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('hidden', !show); }
+        
+        function showLoading(show, text="Connecting to Server...") { 
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').classList.toggle('hidden', !show); 
+        }
 
         async function loadGlobalConfig() {
             const snap = await getDoc(getDocRef('config', 'global'));
@@ -723,7 +740,6 @@
             const tSnap = await getDoc(getDocRef('config', `tasks_${AppState.currentClassId}`));
             AppState.tasks = tSnap.exists() ? (tSnap.data().tasks || []) : [];
             
-            // Preload students for this class
             const q = await getDocs(getPublicRef('students'));
             AppState.students = [];
             q.forEach(d => {
@@ -733,7 +749,6 @@
             AppState.students.sort((a,b)=>a.rollNo-b.rollNo);
         }
 
-        // --- STREAMING_CHUNK:Image Cropper Implementation ---
         let cropper = null;
         window.handleLogoUpload = function(e) {
             const file = e.target.files[0];
@@ -754,7 +769,7 @@
         window.closeCropper = function() { document.getElementById('cropper-modal').classList.add('hidden'); if (cropper) cropper.destroy(); };
         window.applyCrop = function() {
             if (!cropper) return;
-            showLoading(true);
+            showLoading(true, "Processing image...");
             setTimeout(() => {
                 const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
                 let q = 0.9, b64 = canvas.toDataURL('image/jpeg', q);
@@ -774,7 +789,6 @@
             document.getElementById('btn-remove-logo').classList.add('hidden');
         };
 
-        // --- STREAMING_CHUNK:Admin Setup View Functions ---
         window.renderAdminSetup = function() {
             const c = AppState.config;
             document.getElementById('setup-inst-name').value = c.instName || '';
@@ -823,7 +837,7 @@
         }
 
         window.saveGlobalSetup = async function() {
-            showLoading(true);
+            showLoading(true, "Saving Configuration...");
             try {
                 AppState.config.instName = document.getElementById('setup-inst-name').value;
                 AppState.config.instSubtitle = document.getElementById('setup-inst-sub').value;
@@ -832,11 +846,10 @@
                 await setDoc(getDocRef('config', 'global'), AppState.config);
                 setupGlobalClassSelector();
                 showAlert("Success", "Configuration saved.", "success");
-            } catch(e) { showAlert("Error", "Failed to save.", "error"); }
+            } catch(e) { showAlert("Error", "Failed to save configuration. Check Firestore permissions.", "error"); }
             showLoading(false);
         };
 
-        // --- Admin: Students ---
         window.renderAdminStudents = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const list = document.getElementById('admin-students-list');
@@ -854,22 +867,21 @@
             const cls = getCurrentClassConfig(); if(!cls) return;
             const name = document.getElementById('new-student-name').value.trim();
             if(!name) return;
-            showLoading(true);
+            showLoading(true, "Adding Student...");
             try {
                 let max = 0; AppState.students.forEach(s => { if(s.rollNo>max) max=s.rollNo; });
                 await setDoc(doc(getPublicRef('students')), { classId: cls.id, name: name, rollNo: max+1 });
                 document.getElementById('new-student-name').value = '';
                 await loadClassDependencies(); await renderAdminStudents();
-            } catch(e) { showAlert("Error", "Failed to add.", "error"); }
+            } catch(e) { showAlert("Error", "Failed to add student.", "error"); }
             showLoading(false);
         };
         window.deleteStudent = async function(id) {
             if(confirm("Delete student?")) {
-                showLoading(true); await deleteDoc(getDocRef('students', id)); await loadClassDependencies(); await renderAdminStudents(); showLoading(false);
+                showLoading(true, "Deleting..."); await deleteDoc(getDocRef('students', id)); await loadClassDependencies(); await renderAdminStudents(); showLoading(false);
             }
         };
 
-        // --- Admin: Timetable ---
         window.renderAdminTimetableForm = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const day = document.getElementById('admin-timetable-day').value;
@@ -895,7 +907,7 @@
                 for(let i=0; i<(cls.periodsCount||4); i++) {
                     let d = tData[i]; if(d && d.subject) document.getElementById(`tt_sub_${i}`).value = d.subject;
                 }
-            } catch(e) { c.innerHTML = 'Error'; }
+            } catch(e) { c.innerHTML = 'Error loading timetable.'; }
         };
         window.saveAdminTimetable = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
@@ -904,12 +916,11 @@
             for(let i=0; i<(cls.periodsCount||4); i++) {
                 arr.push({ start: document.getElementById(`tt_start_${i}`).value, end: document.getElementById(`tt_end_${i}`).value, subject: document.getElementById(`tt_sub_${i}`).value });
             }
-            showLoading(true);
+            showLoading(true, "Saving Timetable...");
             try { await setDoc(getDocRef('config', 'timetable_'+cls.id), { [day]: arr }, { merge: true }); showAlert("Saved", `Timetable updated.`, "success"); } 
-            catch(e) { showAlert("Error", "Failed", "error"); } showLoading(false);
+            catch(e) { showAlert("Error", "Failed to save timetable.", "error"); } showLoading(false);
         };
 
-        // --- Admin: Task Builder ---
         window.renderAdminTasks = function() {
             const c = document.getElementById('admin-tasks-list');
             if(AppState.tasks.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No tasks defined.</p>'; return; }
@@ -926,7 +937,7 @@
             const pts = parseInt(document.getElementById('new-task-points').value) || 0;
             if(!title) return;
             AppState.tasks.push({ id: 't_'+Date.now(), title, points: pts });
-            showLoading(true);
+            showLoading(true, "Saving Task...");
             try { 
                 await setDoc(getDocRef('config', 'tasks_'+cls.id), { tasks: AppState.tasks }); 
                 document.getElementById('new-task-title').value = ''; renderAdminTasks(); 
@@ -935,11 +946,10 @@
         window.adminRemoveTask = async function(id) {
             const cls = getCurrentClassConfig(); if(!cls) return;
             AppState.tasks = AppState.tasks.filter(t=>t.id!==id);
-            showLoading(true);
+            showLoading(true, "Removing Task...");
             try { await setDoc(getDocRef('config', 'tasks_'+cls.id), { tasks: AppState.tasks }); renderAdminTasks(); } catch(e) {} showLoading(false);
         };
 
-        // --- Admin: Syllabus Targets ---
         window.renderAdminSyllabusForm = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const mSel = document.getElementById('admin-syllabus-month');
@@ -963,20 +973,18 @@
                         </div>`;
                 });
                 c.innerHTML = html;
-            } catch(e) { c.innerHTML = 'Error loading data.'; }
+            } catch(e) { c.innerHTML = 'Error loading syllabus data.'; }
         };
         window.saveAdminSyllabus = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const month = document.getElementById('admin-syllabus-month').value;
             let obj = {};
             (cls.subjects||[]).forEach((s, i) => { obj[s] = document.getElementById(`syl_tgt_${i}`).value; });
-            showLoading(true);
+            showLoading(true, "Saving Targets...");
             try { await setDoc(getDocRef('config', 'syllabus_'+cls.id), { [month]: obj }, { merge: true }); showAlert("Saved", "Targets saved.", "success"); } 
-            catch(e) { showAlert("Error", "Failed", "error"); } showLoading(false);
+            catch(e) { showAlert("Error", "Failed to save.", "error"); } showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:User UI Controllers (Attendance & Tracking) ---
-        // --- View: Home ---
         window.renderHomeView = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const date = new Date();
@@ -1008,7 +1016,6 @@
             } catch(e) { c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading timetable.</p>'; }
         };
 
-        // --- Smart Attendance ---
         let attData = {}, attDate = '', attTempLeaveStudent = null;
         window.initAttendanceView = function() {
             document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
@@ -1091,15 +1098,14 @@
         };
         window.saveAttendance = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
-            showLoading(true);
+            showLoading(true, "Saving Attendance...");
             try {
                 await setDoc(getDocRef('attendance', `${cls.id}_${attDate}`), { classId: cls.id, date: attDate, records: attData });
                 showAlert("Saved", "Attendance saved successfully.", "success");
-            } catch(e) { showAlert("Error", "Failed to save.", "error"); }
+            } catch(e) { showAlert("Error", "Failed to save attendance.", "error"); }
             showLoading(false);
         };
 
-        // --- Task Evaluator ---
         let evalData = {};
         window.initTaskEvalView = function() {
             const c = document.getElementById('eval-task-container');
@@ -1155,15 +1161,13 @@
         window.saveTaskEvaluations = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const dateStr = new Date().toISOString().split('T')[0];
-            showLoading(true);
+            showLoading(true, "Submitting Evaluations...");
             try {
                 await setDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`), { classId: cls.id, date: dateStr, records: evalData }, { merge: true });
                 showAlert("Saved", "Evaluations submitted.", "success");
-            } catch(e) { showAlert("Error", "Failed", "error"); } showLoading(false);
+            } catch(e) { showAlert("Error", "Failed to submit.", "error"); } showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:User Q&A Tracker & Syllabus ---
-        // --- Daily Tracker ---
         let trData = {};
         window.initTrackerView = function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
@@ -1210,14 +1214,13 @@
             const cls = getCurrentClassConfig(); const sub = document.getElementById('tracker-subject-select').value;
             if(!cls || !sub) return;
             const ds = new Date().toISOString().split('T')[0];
-            showLoading(true);
+            showLoading(true, "Saving Q&A Data...");
             try {
                 await setDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`), { date: ds, subject: sub, classId: cls.id, students: trData, updatedAt: ds });
                 showAlert("Saved", "Daily tracking saved.", "success");
-            } catch(e) { showAlert("Error", "Failed", "error");} showLoading(false);
+            } catch(e) { showAlert("Error", "Failed to save.", "error");} showLoading(false);
         };
 
-        // --- Syllabus Planner (Vertical Fix) ---
         window.initSyllabusView = function() {
             const mSel = document.getElementById('user-syllabus-month');
             mSel.innerHTML = '';
@@ -1271,7 +1274,7 @@
             let compData = {};
             (cls.subjects||[]).forEach((s, idx) => { const el = document.getElementById(`prog_comp_${idx}`); if(el) compData[s] = el.value; });
             const progDocId = `${cls.id}_${month.replace(/\s+/g,'_')}`;
-            showLoading(true);
+            showLoading(true, "Updating Progress...");
             try {
                 await setDoc(getDocRef('syllabus_tracking', progDocId), { classId: cls.id, month: month, completed: compData, updatedAt: new Date().toISOString() });
                 showAlert("Saved", "Syllabus progress updated.", "success");
@@ -1279,8 +1282,6 @@
             } catch(e) { showAlert("Error", "Could not save.", "error"); } showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:Student Reports Logic ---
-        // --- Student Reports ---
         window.renderReportsView = function() {
             const sSel = document.getElementById('report-student-select');
             sSel.innerHTML = '<option value="">-- Choose Student --</option>';
@@ -1292,7 +1293,7 @@
             const date = new Date();
             for(let i=0; i<6; i++) {
                 let d = new Date(date.getFullYear(), date.getMonth() - i, 1);
-                let val = d.toISOString().substring(0, 7); // e.g. 2026-08
+                let val = d.toISOString().substring(0, 7); 
                 let label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                 mSel.add(new Option(label, val));
             }
@@ -1302,72 +1303,49 @@
 
         window.loadStudentReport = async function() {
             const sid = document.getElementById('report-student-select').value;
-            const monthStr = document.getElementById('report-month-select').value; // '2026-08'
+            const monthStr = document.getElementById('report-month-select').value; 
             const cls = getCurrentClassConfig();
             
             if(!sid || !monthStr || !cls) { showAlert("Notice", "Select student and month.", "warning"); return; }
             
-            showLoading(true);
+            showLoading(true, "Generating Report...");
             try {
-                let attP=0, attA=0, attL=0;
-                let taskPoints = 0;
-                let trackCount = 0;
+                let attP=0, attA=0, attL=0, taskPoints=0, trackCount=0;
 
-                // 1. Fetch Attendance
                 const attQ = await getDocs(getPublicRef('attendance'));
                 attQ.forEach(doc => {
                     let d = doc.data();
-                    if(d.classId === cls.id && doc.id.includes(monthStr)) {
-                        if(d.records && d.records[sid]) {
-                            let stat = d.records[sid].status;
-                            if(stat==='present') attP++;
-                            else if(stat==='absent') attA++;
-                            else if(stat==='leave') attL++;
-                        }
+                    if(d.classId === cls.id && doc.id.includes(monthStr) && d.records && d.records[sid]) {
+                        let stat = d.records[sid].status;
+                        if(stat==='present') attP++; else if(stat==='absent') attA++; else if(stat==='leave') attL++;
                     }
                 });
 
-                // 2. Fetch Tasks
                 const taskQ = await getDocs(getPublicRef('task_evaluations'));
                 taskQ.forEach(doc => {
                     let d = doc.data();
-                    if(d.classId === cls.id && doc.id.includes(monthStr)) {
-                        if(d.records && d.records[sid]) {
-                            for(let taskId in d.records[sid]) {
-                                if(d.records[sid][taskId] === true) {
-                                    let tDef = AppState.tasks.find(t => t.id === taskId);
-                                    if(tDef) taskPoints += parseInt(tDef.points);
-                                }
+                    if(d.classId === cls.id && doc.id.includes(monthStr) && d.records && d.records[sid]) {
+                        for(let taskId in d.records[sid]) {
+                            if(d.records[sid][taskId] === true) {
+                                let tDef = AppState.tasks.find(t => t.id === taskId);
+                                if(tDef) taskPoints += parseInt(tDef.points);
                             }
                         }
                     }
                 });
 
-                // 3. Fetch Tracker (Q&A)
                 const trQ = await getDocs(getPublicRef('daily_tracking'));
                 trQ.forEach(doc => {
                     let d = doc.data();
-                    if(d.classId === cls.id && d.date && d.date.startsWith(monthStr)) {
-                        if(d.students && d.students[sid] === 'asked') {
-                            trackCount++;
-                        }
+                    if(d.classId === cls.id && d.date && d.date.startsWith(monthStr) && d.students && d.students[sid] === 'asked') {
+                        trackCount++;
                     }
                 });
 
-                // Render Results
-                document.getElementById('rep-att-p').innerText = attP;
-                document.getElementById('rep-att-a').innerText = attA;
-                document.getElementById('rep-att-l').innerText = attL;
-                document.getElementById('rep-task-pts').innerText = taskPoints;
-                document.getElementById('rep-track-count').innerText = trackCount;
-
-                document.getElementById('report-results-container').classList.remove('hidden');
-                document.getElementById('report-empty').classList.add('hidden');
-
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Could not generate report.", "error");
-            }
+                document.getElementById('rep-att-p').innerText = attP; document.getElementById('rep-att-a').innerText = attA; document.getElementById('rep-att-l').innerText = attL;
+                document.getElementById('rep-task-pts').innerText = taskPoints; document.getElementById('rep-track-count').innerText = trackCount;
+                document.getElementById('report-results-container').classList.remove('hidden'); document.getElementById('report-empty').classList.add('hidden');
+            } catch(e) { console.error(e); showAlert("Error", "Could not generate report.", "error"); }
             showLoading(false);
         };
     </script>
