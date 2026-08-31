@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Noorun Ala Noor - Madrasa ERP</title>
+    
+    <!-- External Libraries: Tailwind, FontAwesome, Cropper.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Cropper.js for Image Cropping -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -196,7 +196,7 @@
             </div>
         </div>
 
-        <!-- View: Syllabus Planner (Vertical List) -->
+        <!-- View: Syllabus Planner -->
         <div id="view-syllabus" class="app-view hidden">
             <h2 class="text-xl font-bold text-[#0f172a] mb-2">Syllabus Planner</h2>
             <p class="text-sm text-slate-500 mb-6">Update completed lessons for all subjects below.</p>
@@ -215,7 +215,7 @@
             </div>
         </div>
 
-        <!-- View: Student Reports (NEW) -->
+        <!-- View: Student Reports -->
         <div id="view-reports" class="app-view hidden">
             <h2 class="text-xl font-bold text-[#0f172a] mb-2">Student Reports</h2>
             <p class="text-sm text-slate-500 mb-6">View consolidated performance for a student.</p>
@@ -510,6 +510,10 @@
             apiKey: "AIzaSyAfJSonmGHnf0t92B71ycuAZbc-CV3k7LE",
             authDomain: "fest-dsd-003.firebaseapp.com",
             projectId: "fest-dsd-003",
+            storageBucket: "fest-dsd-003.firebasestorage.app",
+            messagingSenderId: "409596394273",
+            appId: "1:409596394273:web:b930012ce0a845ddb45c60",
+            measurementId: "G-WSPJPQR032"
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -719,7 +723,7 @@
             const tSnap = await getDoc(getDocRef('config', `tasks_${AppState.currentClassId}`));
             AppState.tasks = tSnap.exists() ? (tSnap.data().tasks || []) : [];
             
-            // Also preload students for this class
+            // Preload students for this class
             const q = await getDocs(getPublicRef('students'));
             AppState.students = [];
             q.forEach(d => {
@@ -729,7 +733,7 @@
             AppState.students.sort((a,b)=>a.rollNo-b.rollNo);
         }
 
-        // --- STREAMING_CHUNK:Image Cropper Implementation... ---
+        // --- STREAMING_CHUNK:Image Cropper Implementation ---
         let cropper = null;
         window.handleLogoUpload = function(e) {
             const file = e.target.files[0];
@@ -770,7 +774,7 @@
             document.getElementById('btn-remove-logo').classList.add('hidden');
         };
 
-        // --- STREAMING_CHUNK:Admin Setup View Functions... ---
+        // --- STREAMING_CHUNK:Admin Setup View Functions ---
         window.renderAdminSetup = function() {
             const c = AppState.config;
             document.getElementById('setup-inst-name').value = c.instName || '';
@@ -971,7 +975,7 @@
             catch(e) { showAlert("Error", "Failed", "error"); } showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:User UI Controllers (Attendance & Tracking)... ---
+        // --- STREAMING_CHUNK:User UI Controllers (Attendance & Tracking) ---
         // --- View: Home ---
         window.renderHomeView = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
@@ -1004,7 +1008,7 @@
             } catch(e) { c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading timetable.</p>'; }
         };
 
-        // --- Smart Attendance (Fix Implemented) ---
+        // --- Smart Attendance ---
         let attData = {}, attDate = '', attTempLeaveStudent = null;
         window.initAttendanceView = function() {
             document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
@@ -1158,7 +1162,7 @@
             } catch(e) { showAlert("Error", "Failed", "error"); } showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:User Q&A Tracker & Syllabus Vertical Layout... ---
+        // --- STREAMING_CHUNK:User Q&A Tracker & Syllabus ---
         // --- Daily Tracker ---
         let trData = {};
         window.initTrackerView = function() {
@@ -1275,8 +1279,8 @@
             } catch(e) { showAlert("Error", "Could not save.", "error"); } showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:Student Reports Logic... ---
-        // --- Student Reports (NEW) ---
+        // --- STREAMING_CHUNK:Student Reports Logic ---
+        // --- Student Reports ---
         window.renderReportsView = function() {
             const sSel = document.getElementById('report-student-select');
             sSel.innerHTML = '<option value="">-- Choose Student --</option>';
@@ -1285,7 +1289,6 @@
             const mSel = document.getElementById('report-month-select');
             mSel.innerHTML = '';
             
-            // Format months dynamically as YYYY-MM for backend matching, but show Name
             const date = new Date();
             for(let i=0; i<6; i++) {
                 let d = new Date(date.getFullYear(), date.getMonth() - i, 1);
@@ -1314,7 +1317,6 @@
                 const attQ = await getDocs(getPublicRef('attendance'));
                 attQ.forEach(doc => {
                     let d = doc.data();
-                    // Doc id format: clsId_YYYY-MM-DD
                     if(d.classId === cls.id && doc.id.includes(monthStr)) {
                         if(d.records && d.records[sid]) {
                             let stat = d.records[sid].status;
@@ -1331,10 +1333,8 @@
                     let d = doc.data();
                     if(d.classId === cls.id && doc.id.includes(monthStr)) {
                         if(d.records && d.records[sid]) {
-                            // Find which tasks are true
                             for(let taskId in d.records[sid]) {
                                 if(d.records[sid][taskId] === true) {
-                                    // find points for task
                                     let tDef = AppState.tasks.find(t => t.id === taskId);
                                     if(tDef) taskPoints += parseInt(tDef.points);
                                 }
