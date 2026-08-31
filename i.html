@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Noorun Ala Noor - Madrasa ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Cropper.js for Image Cropping -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        .glass-header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
+
+        /* Custom Radio Buttons */
+        .att-radio:checked + label { transform: scale(0.95); }
+    </style>
+</head>
+<body class="text-slate-800 antialiased overflow-x-hidden">
+
+    <!-- Global App State -->
+    <script>
+        const AppState = {
+            mode: 'user', 
+            currentView: 'view-home',
+            currentClassId: null,
+            config: { classes: [] },
+            tasks: [],
+            advSyllabus: {}
+        };
+    </script>
+
+    <!-- Header Section -->
+    <header class="glass-header fixed top-0 w-full z-40 border-b border-slate-200 shadow-sm">
+        <div class="px-4 py-3 flex justify-between items-center max-w-md mx-auto">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative">
+                    <span id="app-logo-fallback">നൂർ</span>
+                    <img id="app-header-logo" src="" class="w-full h-full object-cover hidden absolute inset-0">
+                </div>
+                <div>
+                    <h1 id="app-header-title" class="font-bold text-sm text-[#0f172a] leading-tight tracking-wide">NOORUN ALA NOOR</h1>
+                    <p id="app-header-subtitle" class="text-[10px] text-slate-500 font-medium uppercase">MADRASA TRACKER</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Mode Switcher -->
+                <div class="flex items-center justify-center">
+                    <label for="mode-toggle" class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="mode-toggle" class="sr-only" onchange="toggleAppMode(this.checked)">
+                            <div class="block bg-slate-200 w-14 h-8 rounded-full transition-colors" id="toggle-bg"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform flex items-center justify-center shadow" id="toggle-dot">
+                                <i class="fas fa-user text-xs text-slate-500" id="toggle-icon"></i>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Menu Button -->
+                <button onclick="toggleMenu()" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 bg-slate-100 rounded-md">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Global Class Selector -->
+    <div id="class-selector-container" class="fixed top-[65px] w-full z-30 bg-white/90 backdrop-blur-sm border-b border-slate-200 shadow-sm hidden">
+        <div class="max-w-md mx-auto px-4 py-2 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Selected Class:</span>
+            <select id="global-class-selector" onchange="changeGlobalClass(this.value)" class="bg-slate-100 border-none text-sm font-bold text-[#0f172a] rounded-md px-3 py-1 focus:ring-0 cursor-pointer w-48 truncate">
+                <!-- Options populated dynamically -->
+            </select>
+        </div>
+    </div>
+
+    <!-- Dropdown Menu -->
+    <div id="side-menu" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="toggleMenu()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-64 bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="menu-panel">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-[#f8fafc]">
+                <h2 class="font-bold text-slate-800" id="menu-title">Menu</h2>
+                <button onclick="toggleMenu()" class="p-2 text-slate-500 hover:text-slate-800"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- User Menu Links -->
+            <nav id="menu-user" class="flex-1 overflow-y-auto p-4 space-y-1">
+                <a href="#" onclick="navigate('view-home');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-home w-5 text-blue-500"></i> Home Dashboard</a>
+                <a href="#" onclick="navigate('view-attendance');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-user-check w-5 text-emerald-500"></i> Smart Attendance</a>
+                <a href="#" onclick="navigate('view-tasks-eval');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-star w-5 text-amber-500"></i> Task Evaluator</a>
+                <a href="#" onclick="navigate('view-tracker');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-clipboard-question w-5 text-indigo-500"></i> Daily Tracker</a>
+                <a href="#" onclick="navigate('view-adv-syllabus-user');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-book-open w-5 text-purple-500"></i> Syllabus Planner</a>
+            </nav>
+
+            <!-- Admin Menu Links -->
+            <nav id="menu-admin" class="flex-1 overflow-y-auto p-4 space-y-1 hidden">
+                <div class="text-[10px] font-bold text-slate-400 uppercase mb-2 px-3 tracking-wider">Administration</div>
+                <a href="#" onclick="navigate('view-admin-setup');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-cogs w-5 text-slate-600"></i> Global Setup</a>
+                <a href="#" onclick="navigate('view-admin-students');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-users w-5 text-slate-600"></i> Manage Students</a>
+                <a href="#" onclick="navigate('view-admin-timetable');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-calendar-alt w-5 text-slate-600"></i> Timetable Editor</a>
+                <a href="#" onclick="navigate('view-admin-tasks');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-tasks w-5 text-slate-600"></i> Task Builder</a>
+                <a href="#" onclick="navigate('view-admin-adv-syllabus');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-chart-line w-5 text-slate-600"></i> Syllabus Setup</a>
+            </nav>
+            
+            <div class="p-4 border-t border-slate-100 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                ERP System v3.0
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="max-w-md mx-auto pt-32 pb-20 px-4 min-h-screen relative" id="main-container">
+        
+        <div id="loading-overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#f8fafc]">
+            <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
+            <p class="text-slate-500 text-sm font-medium animate-pulse">Connecting to Server...</p>
+        </div>
+
+        <!-- ==================== USER VIEWS ==================== -->
+        
+        <!-- View: Home -->
+        <div id="view-home" class="app-view hidden">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-[#0f172a]" id="home-day-title">Today</h2>
+                    <p class="text-sm text-slate-500" id="home-date-subtitle">Loading...</p>
+                </div>
+                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold" id="home-class-badge">Class --</div>
+            </div>
+            
+            <div id="home-timetable-container" class="space-y-4"></div>
+            
+            <div id="home-empty-state" class="hidden text-center py-10 bg-white rounded-2xl shadow-sm border border-slate-100 mt-4">
+                <i class="fas fa-mug-hot text-4xl text-slate-300 mb-3"></i>
+                <h3 class="font-bold text-slate-700">No Classes Today</h3>
+                <p class="text-sm text-slate-500">Enjoy your day off!</p>
+            </div>
+        </div>
+
+        <!-- View: Attendance -->
+        <div id="view-attendance" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Smart Attendance</h2>
+            <div class="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <i class="fas fa-calendar-day text-blue-500"></i>
+                <input type="date" id="attendance-date" class="bg-transparent border-none outline-none font-bold text-slate-700 text-sm flex-1" onchange="loadAttendance()">
+            </div>
+
+            <div id="attendance-students-list" class="space-y-3"></div>
+            
+            <div class="mt-8 sticky bottom-4">
+                <button onclick="saveAttendance()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-xl hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Attendance
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Task Evaluator -->
+        <div id="view-tasks-eval" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Task Evaluator</h2>
+            <p class="text-xs text-slate-500 mb-6">Select a task to evaluate students for today.</p>
+
+            <div class="mb-4">
+                <select id="eval-task-select" onchange="loadTaskEvaluations()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all font-medium appearance-none">
+                    <option value="">-- Choose Task --</option>
+                </select>
+            </div>
+
+            <div id="eval-students-list" class="space-y-3 mt-4"></div>
+
+            <div class="mt-8 sticky bottom-4">
+                <button onclick="saveTaskEvaluations()" class="w-full bg-amber-500 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-amber-600 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-check-double"></i> Submit Evaluations
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Daily Tracker (Questions) -->
+        <div id="view-tracker" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Daily Tracker</h2>
+            <p class="text-xs text-slate-500 mb-6">Track daily QA and homework checks.</p>
+
+            <div class="mb-4">
+                <select id="tracker-subject-select" onchange="loadTrackerStudents()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium appearance-none">
+                    <option value="">-- Choose Subject --</option>
+                </select>
+            </div>
+
+            <div id="tracker-students-list" class="space-y-3 mt-4"></div>
+            
+            <div class="mt-8 sticky bottom-4">
+                <button onclick="saveDailyTracking()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-indigo-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Tracking
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Syllabus Planner (User) -->
+        <div id="view-adv-syllabus-user" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Syllabus Planner</h2>
+            <p class="text-xs text-slate-500 mb-6">Update total lessons/pages completed.</p>
+
+            <div class="mb-4">
+                <select id="user-syllabus-subject" onchange="loadUserSyllabus()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium appearance-none">
+                    <option value="">-- Choose Subject --</option>
+                </select>
+            </div>
+
+            <div id="user-syllabus-card" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mt-4 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800" id="usyl-title">Subject Name</h3>
+                    <span class="text-[10px] font-bold uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded" id="usyl-type">Pages</span>
+                </div>
+                
+                <div class="flex justify-between text-xs text-slate-500 mb-2">
+                    <span>Completed</span>
+                    <span>Total: <span id="usyl-total" class="font-bold">0</span></span>
+                </div>
+                
+                <div class="w-full bg-slate-100 rounded-full h-3 mb-4 overflow-hidden relative">
+                    <div id="usyl-bar" class="bg-purple-500 h-full rounded-full transition-all duration-1000 w-0"></div>
+                </div>
+
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="flex-1 text-xs font-bold text-slate-600">Update Progress:</div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateUsylCount(-1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100"><i class="fas fa-minus"></i></button>
+                        <input type="number" id="usyl-input" class="w-16 h-8 text-center font-bold text-sm bg-white border border-slate-300 rounded-lg outline-none focus:border-purple-500" value="0">
+                        <button onclick="updateUsylCount(1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 sticky bottom-4">
+                <button onclick="saveUserSyllabus()" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-purple-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-sync-alt"></i> Update Syllabus
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== ADMIN VIEWS ==================== -->
+
+        <!-- View: Admin - Global Setup -->
+        <div id="view-admin-setup" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-6">
+                <i class="fas fa-cogs text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Global Setup</h2>
+            </div>
+            
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Institution Details</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Institution Name</label>
+                        <input type="text" id="setup-inst-name" placeholder="e.g. Noorun Ala Noor" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Subtitle / Location</label>
+                        <input type="text" id="setup-inst-sub" placeholder="e.g. Madrasa Tracker" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Logo (Square, Max 200KB)</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative">
+                                <img id="setup-logo-preview" src="" class="w-full h-full object-cover hidden">
+                                <i class="fas fa-image text-slate-400 text-xl" id="setup-logo-icon"></i>
+                            </div>
+                            <div class="flex flex-col gap-2 flex-1">
+                                <input type="file" id="setup-inst-logo" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">
+                                <button onclick="document.getElementById('setup-inst-logo').click()" class="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 w-full text-center transition-colors"><i class="fas fa-upload mr-1"></i> Upload Logo</button>
+                                <button id="btn-remove-logo" onclick="removeLogo()" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-100 w-full text-center transition-colors hidden"><i class="fas fa-trash mr-1"></i> Remove</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="setup-logo-base64">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Academic Calendar</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Calendar Type</label>
+                        <select id="setup-cal-type" onchange="updateSetupMonths()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                            <option value="english">English (Gregorian)</option>
+                            <option value="arabic">Arabic (Hijri)</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Start Month</label>
+                            <select id="setup-cal-start" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">End Month</label>
+                            <select id="setup-cal-end" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
+                    Classes Setup
+                    <button onclick="adminAddClass()" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"><i class="fas fa-plus mr-1"></i>Add Class</button>
+                </h3>
+                <div id="setup-classes-container" class="space-y-6"></div>
+            </div>
+
+            <button onclick="saveGlobalSetup()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2 mb-10">
+                <i class="fas fa-save"></i> Save Global Configuration
+            </button>
+        </div>
+
+        <!-- View: Admin - Manage Students -->
+        <div id="view-admin-students" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-users text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Manage Students</h2>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 mt-4">
+                <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
+                    <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-slate-800">Add</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                    <span>Roll / Name</span>
+                    <span>Action</span>
+                </div>
+                <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- View: Admin - Timetable Editor -->
+        <div id="view-admin-timetable" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-calendar-alt text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Timetable Editor</h2>
+            </div>
+
+            <div class="mb-4 mt-4">
+                <select id="admin-timetable-day" onchange="renderAdminTimetableForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 font-medium">
+                    <option value="Sunday">Sunday</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Saturday">Saturday</option>
+                </select>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div id="admin-timetable-periods" class="space-y-4"></div>
+                <button onclick="saveAdminTimetable()" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Timetable
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Admin - Task Builder -->
+        <div id="view-admin-tasks" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-tasks text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Task & Points Builder</h2>
+            </div>
+            <p class="text-xs text-slate-500 mb-6">Create daily evaluation tasks for the selected class.</p>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Task</h3>
+                <div class="space-y-3">
+                    <input type="text" id="new-task-title" placeholder="e.g. 5 Times Salah, Reading..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Points</label>
+                            <input type="number" id="new-task-points" value="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="adminAddTask()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm h-[38px]">Create</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="admin-tasks-list" class="space-y-3"></div>
+        </div>
+
+        <!-- View: Admin - Advanced Syllabus -->
+        <div id="view-admin-adv-syllabus" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-chart-line text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Advanced Syllabus</h2>
+            </div>
+            <p class="text-xs text-slate-500 mb-6">Set total units (Pages/Lessons) for each subject.</p>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div id="admin-adv-syllabus-list" class="space-y-4"></div>
+                <button onclick="saveAdminAdvSyllabus()" class="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg shadow-md hover:bg-slate-900 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Syllabus Config
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Leave Reason Modal -->
+    <div id="leave-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeLeaveModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 transform scale-95 transition-transform duration-200" id="leave-content">
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Leave Reason</h3>
+            <p class="text-xs text-slate-500 mb-4">Please specify why the student is absent.</p>
+            <input type="text" id="leave-reason-input" placeholder="e.g. Fever, Traveling" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-sm outline-none focus:border-amber-500 mb-6">
+            <div class="flex gap-3">
+                <button onclick="closeLeaveModal()" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onclick="confirmLeaveReason()" class="flex-1 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Cropper Modal -->
+    <div id="cropper-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-md p-4 flex flex-col h-[75vh] shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800">Crop Logo</h3>
+                <button onclick="closeCropper()" class="text-slate-400 hover:text-slate-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 min-h-0 relative bg-slate-900 rounded-lg overflow-hidden">
+                <img id="cropper-image" src="" class="block max-w-full">
+            </div>
+            <div class="mt-4 flex gap-3">
+                <button onclick="closeCropper()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold">Cancel</button>
+                <button onclick="applyCrop()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Apply Crop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAlert()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 transform scale-95 transition-transform duration-200" id="alert-content">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" id="alert-icon-container">
+                    <i class="fas fa-info text-2xl" id="alert-icon"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 mb-2" id="alert-title">Notification</h3>
+                <p class="text-sm text-slate-600 mb-6" id="alert-message">Message goes here.</p>
+                <button onclick="closeAlert()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAfJSonmGHnf0t92B71ycuAZbc-CV3k7LE",
+            authDomain: "fest-dsd-003.firebaseapp.com",
+            projectId: "fest-dsd-003",
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'madrasa_tracker_v1';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        const ENGLISH_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
+        const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        const getPublicRef = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+        const getDocRef = (type, id) => doc(db, 'artifacts', appId, 'public', 'data', type, id);
+
+        async function initApp() {
+            showLoading(true);
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showAlert("Error", "Could not connect to database.", "error");
+                showLoading(false);
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadGlobalConfig();
+                setupGlobalClassSelector();
+                updateUIForMode();
+                showLoading(false);
+            }
+        });
+        initApp();
+
+        // --- Core UI Functions ---
+        window.toggleMenu = function() {
+            const menu = document.getElementById('side-menu');
+            const panel = document.getElementById('menu-panel');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+            } else {
+                panel.classList.add('translate-x-full');
+                setTimeout(() => menu.classList.add('hidden'), 300);
+            }
+        };
+
+        window.navigate = function(viewId) {
+            toggleMenu(); // close menu
+            document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            AppState.currentView = viewId;
+            
+            if(!AppState.currentClassId && viewId.startsWith('view-admin') && viewId !== 'view-admin-setup') {
+                showAlert("Setup Required", "Please configure classes first.", "warning");
+                return;
+            }
+
+            if(viewId === 'view-home') renderHomeView();
+            if(viewId === 'view-attendance') initAttendanceView();
+            if(viewId === 'view-tasks-eval') initTaskEvalView();
+            if(viewId === 'view-tracker') initTrackerView();
+            if(viewId === 'view-adv-syllabus-user') initUserSyllabusView();
+            
+            if(viewId === 'view-admin-setup') renderAdminSetup();
+            if(viewId === 'view-admin-students') renderAdminStudents();
+            if(viewId === 'view-admin-timetable') renderAdminTimetableForm();
+            if(viewId === 'view-admin-tasks') renderAdminTasks();
+            if(viewId === 'view-admin-adv-syllabus') renderAdminAdvSyllabus();
+        };
+
+        window.toggleAppMode = function(isAdmin) {
+            AppState.mode = isAdmin ? 'admin' : 'user';
+            
+            const dot = document.getElementById('toggle-dot');
+            const bg = document.getElementById('toggle-bg');
+            const icon = document.getElementById('toggle-icon');
+            
+            if(isAdmin) {
+                dot.classList.add('translate-x-6');
+                bg.classList.replace('bg-slate-200', 'bg-blue-600');
+                icon.className = 'fas fa-shield-alt text-xs text-blue-600';
+            } else {
+                dot.classList.remove('translate-x-6');
+                bg.classList.replace('bg-blue-600', 'bg-slate-200');
+                icon.className = 'fas fa-user text-xs text-slate-500';
+            }
+            updateUIForMode();
+        };
+
+        function updateUIForMode() {
+            if (AppState.mode === 'admin') {
+                document.getElementById('menu-admin').classList.remove('hidden');
+                document.getElementById('menu-user').classList.add('hidden');
+                document.getElementById('class-selector-container').classList.remove('hidden'); 
+                document.getElementById('menu-title').innerText = "Admin Panel";
+                navigate('view-admin-setup');
+            } else {
+                document.getElementById('menu-admin').classList.add('hidden');
+                document.getElementById('menu-user').classList.remove('hidden');
+                if (!AppState.config.classes || AppState.config.classes.length === 0) {
+                    showAlert("Welcome!", "Please switch to Admin mode to setup the app.", "info");
+                    document.getElementById('class-selector-container').classList.add('hidden');
+                } else {
+                    document.getElementById('class-selector-container').classList.remove('hidden');
+                    navigate('view-home');
+                }
+                document.getElementById('menu-title').innerText = "Menu";
+            }
+        }
+
+        window.changeGlobalClass = async function(classId) {
+            AppState.currentClassId = classId;
+            // Pre-load class specific heavy data
+            await loadClassDependencies();
+            if(!document.getElementById(AppState.currentView).classList.contains('hidden')){
+                navigate(AppState.currentView); // Refresh view
+            }
+        };
+
+        function setupGlobalClassSelector() {
+            const selector = document.getElementById('global-class-selector');
+            selector.innerHTML = '';
+            
+            if (AppState.config && AppState.config.classes && AppState.config.classes.length > 0) {
+                AppState.config.classes.forEach(cls => {
+                    const opt = document.createElement('option');
+                    opt.value = cls.id;
+                    opt.textContent = cls.name;
+                    selector.appendChild(opt);
+                });
+                if (!AppState.currentClassId) AppState.currentClassId = AppState.config.classes[0].id;
+                selector.value = AppState.currentClassId;
+                document.getElementById('class-selector-container').classList.remove('hidden');
+                loadClassDependencies();
+            } else {
+                document.getElementById('class-selector-container').classList.add('hidden');
+            }
+            updateHeaderUI();
+        }
+
+        function getCurrentClassConfig() {
+            if (!AppState.config || !AppState.config.classes) return null;
+            return AppState.config.classes.find(c => c.id === AppState.currentClassId) || null;
+        }
+
+        function updateHeaderUI() {
+            const conf = AppState.config;
+            const titleEl = document.getElementById('app-header-title');
+            const subEl = document.getElementById('app-header-subtitle');
+            const logoEl = document.getElementById('app-header-logo');
+            const fallbackEl = document.getElementById('app-logo-fallback');
+            const containerEl = document.getElementById('app-logo-container');
+
+            titleEl.innerText = conf.instName || 'NOORUN ALA NOOR';
+            subEl.innerText = conf.instSubtitle || 'MADRASA TRACKER';
+
+            if (conf.instLogo) {
+                logoEl.src = conf.instLogo;
+                logoEl.classList.remove('hidden');
+                fallbackEl.classList.add('hidden');
+                containerEl.classList.replace('bg-[#f4eadd]', 'bg-white');
+                containerEl.classList.replace('border-[#e5d5c5]', 'border-slate-200');
+            } else {
+                logoEl.classList.add('hidden');
+                fallbackEl.classList.remove('hidden');
+                containerEl.classList.replace('bg-white', 'bg-[#f4eadd]');
+                containerEl.classList.replace('border-slate-200', 'border-[#e5d5c5]');
+            }
+        }
+
+        // Modals & Alerts
+        window.showAlert = function(title, message, type="info") {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            const icon = document.getElementById('alert-icon');
+            const iconC = document.getElementById('alert-icon-container');
+            iconC.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4";
+            
+            if (type === 'success') { iconC.classList.add('bg-green-100', 'text-green-600'); icon.className = "fas fa-check text-3xl"; }
+            else if (type === 'error') { iconC.classList.add('bg-red-100', 'text-red-600'); icon.className = "fas fa-times text-3xl"; }
+            else if (type === 'warning') { iconC.classList.add('bg-yellow-100', 'text-yellow-600'); icon.className = "fas fa-exclamation-triangle text-3xl"; }
+            else { iconC.classList.add('bg-blue-100', 'text-blue-600'); icon.className = "fas fa-info text-3xl"; }
+            
+            const modal = document.getElementById('alert-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('alert-content').classList.remove('scale-95'), 10);
+        };
+        window.closeAlert = function() {
+            document.getElementById('alert-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('alert-modal').classList.add('hidden'), 200);
+        };
+        function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('hidden', !show); }
+
+        async function loadGlobalConfig() {
+            const snap = await getDoc(getDocRef('config', 'global'));
+            AppState.config = snap.exists() ? snap.data() : { classes: [], calendarType: 'english' };
+        }
+
+        async function loadClassDependencies() {
+            if(!AppState.currentClassId) return;
+            // Load Tasks
+            const tSnap = await getDoc(getDocRef('config', `tasks_${AppState.currentClassId}`));
+            AppState.tasks = tSnap.exists() ? tSnap.data().tasks : [];
+            // Load Adv Syllabus
+            const sSnap = await getDoc(getDocRef('config', `syllabus_adv_${AppState.currentClassId}`));
+            AppState.advSyllabus = sSnap.exists() ? sSnap.data() : {};
+        }
+
+        // --- Cropper Functions ---
+        let cropper = null;
+        window.handleLogoUpload = function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    document.getElementById('cropper-image').src = evt.target.result;
+                    document.getElementById('cropper-modal').classList.remove('hidden');
+                    if (cropper) cropper.destroy();
+                    setTimeout(() => {
+                        cropper = new Cropper(document.getElementById('cropper-image'), {
+                            aspectRatio: 1, viewMode: 2, autoCropArea: 0.9, guides: true
+                        });
+                    }, 50);
+                };
+                reader.readAsDataURL(file);
+                e.target.value = ''; 
+            }
+        };
+        window.closeCropper = function() { document.getElementById('cropper-modal').classList.add('hidden'); if (cropper) cropper.destroy(); };
+        window.applyCrop = function() {
+            if (!cropper) return;
+            showLoading(true);
+            setTimeout(() => {
+                const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
+                let q = 0.9, b64 = canvas.toDataURL('image/jpeg', q);
+                while ((b64.length * 0.75) > 200000 && q > 0.1) { q -= 0.1; b64 = canvas.toDataURL('image/jpeg', q); }
+                document.getElementById('setup-logo-base64').value = b64;
+                document.getElementById('setup-logo-preview').src = b64;
+                document.getElementById('setup-logo-preview').classList.remove('hidden');
+                document.getElementById('setup-logo-icon').classList.add('hidden');
+                document.getElementById('btn-remove-logo').classList.remove('hidden');
+                closeCropper(); showLoading(false);
+            }, 100);
+        };
+        window.removeLogo = function() {
+            document.getElementById('setup-logo-base64').value = '';
+            document.getElementById('setup-logo-preview').classList.add('hidden');
+            document.getElementById('setup-logo-icon').classList.remove('hidden');
+            document.getElementById('btn-remove-logo').classList.add('hidden');
+        };
+
+        // --- ADMIN VIEWS ---
+        window.renderAdminSetup = function() {
+            const c = AppState.config;
+            document.getElementById('setup-inst-name').value = c.instName || '';
+            document.getElementById('setup-inst-sub').value = c.instSubtitle || '';
+            if (c.instLogo) {
+                document.getElementById('setup-logo-base64').value = c.instLogo;
+                document.getElementById('setup-logo-preview').src = c.instLogo;
+                document.getElementById('setup-logo-preview').classList.remove('hidden');
+                document.getElementById('setup-logo-icon').classList.add('hidden');
+                document.getElementById('btn-remove-logo').classList.remove('hidden');
+            }
+            document.getElementById('setup-cal-type').value = c.calendarType || 'english';
+            window.updateSetupMonths();
+            setTimeout(() => {
+                document.getElementById('setup-cal-start').value = c.startMonth || '';
+                document.getElementById('setup-cal-end').value = c.endMonth || '';
+            }, 50);
+            renderAdminClassesList();
+        };
+
+        window.updateSetupMonths = function() {
+            const t = document.getElementById('setup-cal-type').value;
+            const start = document.getElementById('setup-cal-start');
+            const end = document.getElementById('setup-cal-end');
+            start.innerHTML = ''; end.innerHTML = '';
+            (t === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS).forEach(m => { start.add(new Option(m, m)); end.add(new Option(m, m)); });
+        };
+
+        window.adminAddClass = function() {
+            AppState.config.classes.push({ id: 'cls_' + Date.now(), name: `Class ${AppState.config.classes.length + 1}`, periodsCount: 4, subjects: [] });
+            renderAdminClassesList();
+        };
+        window.adminRemoveClass = function(id) { AppState.config.classes = AppState.config.classes.filter(c => c.id !== id); renderAdminClassesList(); };
+        window.updateClassField = function(id, f, v) { const c = AppState.config.classes.find(x => x.id === id); if(c) c[f] = f==='periodsCount'?parseInt(v)||1:v; };
+        window.updateClassSubjects = function(id, v) { const c = AppState.config.classes.find(x => x.id === id); if(c) c.subjects = v.split(',').map(s=>s.trim()).filter(s=>s.length>0); };
+
+        function renderAdminClassesList() {
+            const c = document.getElementById('setup-classes-container');
+            if(AppState.config.classes.length === 0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No classes added.</p>'; return; }
+            c.innerHTML = AppState.config.classes.map(cls => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
+                    <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-100 text-red-500 hover:bg-red-200 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>
+                    <div class="mb-3 pr-10">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Class Name</label>
+                        <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm font-bold">
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Periods/Day</label>
+                            <input type="number" min="1" value="${cls.periodsCount||4}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm text-center">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subjects (Comma separated)</label>
+                            <input type="text" value="${(cls.subjects||[]).join(', ')}" onchange="updateClassSubjects('${cls.id}', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.saveGlobalSetup = async function() {
+            showLoading(true);
+            try {
+                AppState.config.instName = document.getElementById('setup-inst-name').value;
+                AppState.config.instSubtitle = document.getElementById('setup-inst-sub').value;
+                AppState.config.instLogo = document.getElementById('setup-logo-base64').value;
+                AppState.config.calendarType = document.getElementById('setup-cal-type').value;
+                AppState.config.startMonth = document.getElementById('setup-cal-start').value;
+                AppState.config.endMonth = document.getElementById('setup-cal-end').value;
+                await setDoc(getDocRef('config', 'global'), AppState.config);
+                setupGlobalClassSelector();
+                showAlert("Success", "Configuration saved.", "success");
+            } catch(e) { showAlert("Error", "Failed to save.", "error"); }
+            showLoading(false);
+        };
+
+        window.renderAdminStudents = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            showLoading(true);
+            const list = document.getElementById('admin-students-list');
+            try {
+                const qs = await getDocs(getPublicRef('students'));
+                let stds = []; qs.forEach(d => { let x = d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
+                stds.sort((a,b) => a.rollNo - b.rollNo);
+                if(stds.length===0) list.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No students found.</div>';
+                else list.innerHTML = stds.map(s => `
+                    <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 font-bold text-slate-500 flex items-center justify-center text-xs">${s.rollNo}</div>
+                            <div class="text-sm font-bold text-slate-700">${s.name}</div>
+                        </div>
+                        <button onclick="deleteStudent('${s.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
+                    </div>`).join('');
+            } catch(e) { list.innerHTML = '<p class="text-red-500 p-4 text-center">Error.</p>'; }
+            showLoading(false);
+        };
+        window.adminAddStudent = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const name = document.getElementById('new-student-name').value.trim();
+            if(!name) return;
+            showLoading(true);
+            try {
+                const qs = await getDocs(getPublicRef('students'));
+                let max = 0; qs.forEach(d => { let x=d.data(); if(x.classId===cls.id && x.rollNo>max) max=x.rollNo; });
+                await setDoc(doc(getPublicRef('students')), { classId: cls.id, name: name, rollNo: max+1 });
+                document.getElementById('new-student-name').value = '';
+                await renderAdminStudents();
+            } catch(e) { showAlert("Error", "Failed to add.", "error"); }
+            showLoading(false);
+        };
+        window.deleteStudent = async function(id) {
+            if(confirm("Delete student?")) {
+                showLoading(true); await deleteDoc(getDocRef('students', id)); await renderAdminStudents(); showLoading(false);
+            }
+        };
+
+        window.renderAdminTimetableForm = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const day = document.getElementById('admin-timetable-day').value;
+            const c = document.getElementById('admin-timetable-periods'); c.innerHTML = 'Loading...';
+            try {
+                const snap = await getDoc(getDocRef('config', 'timetable_'+cls.id));
+                let tData = snap.exists() ? snap.data()[day] || [] : [];
+                let subOpts = `<option value="">-- Free --</option>` + (cls.subjects||[]).map(s=>`<option value="${s}">${s}</option>`).join('');
+                let html = '';
+                for(let i=0; i<(cls.periodsCount||4); i++) {
+                    let d = tData[i] || {start:'', end:'', subject:''};
+                    html += `
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                            <div class="text-xs font-bold text-blue-600 mb-2">Period ${i+1}</div>
+                            <div class="grid grid-cols-2 gap-3 mb-2">
+                                <input type="time" id="tt_start_${i}" value="${d.start}" class="bg-white border border-slate-200 rounded px-2 py-1 text-sm">
+                                <input type="time" id="tt_end_${i}" value="${d.end}" class="bg-white border border-slate-200 rounded px-2 py-1 text-sm">
+                            </div>
+                            <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm">${subOpts}</select>
+                        </div>`;
+                }
+                c.innerHTML = html;
+                for(let i=0; i<(cls.periodsCount||4); i++) {
+                    let d = tData[i]; if(d && d.subject) document.getElementById(`tt_sub_${i}`).value = d.subject;
+                }
+            } catch(e) { c.innerHTML = 'Error'; }
+        };
+        window.saveAdminTimetable = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const day = document.getElementById('admin-timetable-day').value;
+            let arr = [];
+            for(let i=0; i<(cls.periodsCount||4); i++) {
+                arr.push({ start: document.getElementById(`tt_start_${i}`).value, end: document.getElementById(`tt_end_${i}`).value, subject: document.getElementById(`tt_sub_${i}`).value });
+            }
+            showLoading(true);
+            try { await setDoc(getDocRef('config', 'timetable_'+cls.id), { [day]: arr }, { merge: true }); showAlert("Saved", "Timetable updated.", "success"); } 
+            catch(e) { showAlert("Error", "Failed", "error"); }
+            showLoading(false);
+        };
+
+        window.renderAdminTasks = function() {
+            const c = document.getElementById('admin-tasks-list');
+            if(AppState.tasks.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No tasks defined.</p>'; return; }
+            c.innerHTML = AppState.tasks.map(t => `
+                <div class="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                    <div><div class="font-bold text-slate-800 text-sm">${t.title}</div><div class="text-[10px] font-bold text-amber-500 uppercase mt-1">${t.points} Points</div></div>
+                    <button onclick="adminRemoveTask('${t.id}')" class="text-red-400 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>
+                </div>
+            `).join('');
+        };
+        window.adminAddTask = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const title = document.getElementById('new-task-title').value.trim();
+            const pts = parseInt(document.getElementById('new-task-points').value) || 0;
+            if(!title) return;
+            AppState.tasks.push({ id: 't_'+Date.now(), title, points: pts });
+            showLoading(true);
+            try { 
+                await setDoc(getDocRef('config', 'tasks_'+cls.id), { tasks: AppState.tasks }); 
+                document.getElementById('new-task-title').value = ''; renderAdminTasks(); 
+            } catch(e) {}
+            showLoading(false);
+        };
+        window.adminRemoveTask = async function(id) {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            AppState.tasks = AppState.tasks.filter(t=>t.id!==id);
+            showLoading(true);
+            try { await setDoc(getDocRef('config', 'tasks_'+cls.id), { tasks: AppState.tasks }); renderAdminTasks(); } catch(e) {}
+            showLoading(false);
+        };
+
+        window.renderAdminAdvSyllabus = function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const c = document.getElementById('admin-adv-syllabus-list');
+            if(!cls.subjects || cls.subjects.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No subjects defined in Global Setup.</p>'; return; }
+            let html = '';
+            cls.subjects.forEach((s, idx) => {
+                let d = AppState.advSyllabus[s] || { total: '', type: 'Pages' };
+                html += `
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="font-bold text-slate-800 text-sm mb-3">${s}</div>
+                        <div class="flex gap-3">
+                            <div class="flex-1">
+                                <label class="block text-[10px] text-slate-500 uppercase mb-1">Total Units</label>
+                                <input type="number" id="adv_syl_tot_${idx}" value="${d.total}" placeholder="e.g. 100" class="w-full text-sm bg-white border border-slate-200 rounded px-2 py-2 outline-none">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-[10px] text-slate-500 uppercase mb-1">Unit Type</label>
+                                <select id="adv_syl_type_${idx}" class="w-full text-sm bg-white border border-slate-200 rounded px-2 py-2 outline-none">
+                                    <option value="Pages" ${d.type==='Pages'?'selected':''}>Pages</option>
+                                    <option value="Lessons" ${d.type==='Lessons'?'selected':''}>Lessons</option>
+                                    <option value="Chapters" ${d.type==='Chapters'?'selected':''}>Chapters</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            c.innerHTML = html;
+        };
+        window.saveAdminAdvSyllabus = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            let obj = {};
+            (cls.subjects||[]).forEach((s, i) => {
+                obj[s] = { total: document.getElementById(`adv_syl_tot_${i}`).value, type: document.getElementById(`adv_syl_type_${i}`).value };
+            });
+            showLoading(true);
+            try {
+                await setDoc(getDocRef('config', 'syllabus_adv_'+cls.id), obj);
+                AppState.advSyllabus = obj;
+                showAlert("Saved", "Syllabus config saved.", "success");
+            } catch(e) {}
+            showLoading(false);
+        };
+
+        window.renderHomeView = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const date = new Date();
+            document.getElementById('home-day-title').innerText = DAYS_OF_WEEK[date.getDay()];
+            document.getElementById('home-date-subtitle').innerText = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'});
+            document.getElementById('home-class-badge').innerText = cls.name;
+            const c = document.getElementById('home-timetable-container');
+            const emp = document.getElementById('home-empty-state');
+            c.innerHTML = 'Loading...'; emp.classList.add('hidden');
+            try {
+                const snap = await getDoc(getDocRef('config', 'timetable_'+cls.id));
+                let tData = snap.exists() ? snap.data()[DAYS_OF_WEEK[date.getDay()]] || [] : [];
+                tData = tData.filter(p => p.subject && p.subject.trim() !== '');
+                if(tData.length===0) { c.innerHTML=''; emp.classList.remove('hidden'); }
+                else {
+                    c.innerHTML = tData.map((p,i) => {
+                        const cols = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200'];
+                        return `
+                        <div class="${cols[i%cols.length]} border rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-white opacity-20 rounded-bl-full -mr-4 -mt-4"></div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold uppercase opacity-70">Period ${i+1}</span>
+                                <span class="text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full"><i class="far fa-clock mr-1"></i>${p.start}-${p.end}</span>
+                            </div>
+                            <h3 class="text-2xl font-black mt-2">${p.subject}</h3>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) { c.innerHTML = 'Error'; }
+        };
+
+        // --- Smart Attendance ---
+        let attData = {}, attDate = '', attTempLeaveStudent = null;
+        window.initAttendanceView = function() {
+            document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
+            loadAttendance();
+        };
+        window.loadAttendance = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            attDate = document.getElementById('attendance-date').value;
+            const c = document.getElementById('attendance-students-list'); c.innerHTML = '<p class="text-center">Loading...</p>';
+            try {
+                const q = await getDocs(getPublicRef('students'));
+                let stds = []; q.forEach(d => { let x=d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
+                stds.sort((a,b)=>a.rollNo-b.rollNo);
+                
+                const aSnap = await getDoc(getDocRef('attendance', `${cls.id}_${attDate}`));
+                attData = aSnap.exists() ? aSnap.data().records : {};
+
+                if(stds.length===0) c.innerHTML = 'No students.';
+                else {
+                    c.innerHTML = stds.map(s => {
+                        let stat = attData[s.id] ? attData[s.id].status : 'present';
+                        let reason = attData[s.id] ? attData[s.id].reason : '';
+                        return `
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold shrink-0">${s.rollNo}</div>
+                                <div class="truncate">
+                                    <div class="text-sm font-bold text-slate-800 truncate">${s.name}</div>
+                                    <div class="text-[9px] text-amber-500 font-bold truncate" id="reason_${s.id}">${reason ? 'Leave: '+reason : ''}</div>
+                                </div>
+                            </div>
+                            <div class="flex bg-slate-100 rounded-lg p-1 gap-1 shrink-0">
+                                <input type="radio" name="att_${s.id}" id="att_p_${s.id}" value="present" class="hidden att-radio" ${stat==='present'?'checked':''} onchange="updateAttStatus('${s.id}', 'present')">
+                                <label for="att_p_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='present'?'bg-emerald-500 text-white shadow':'text-slate-400 hover:bg-slate-200'}">P</label>
+                                
+                                <input type="radio" name="att_${s.id}" id="att_a_${s.id}" value="absent" class="hidden att-radio" ${stat==='absent'?'checked':''} onchange="updateAttStatus('${s.id}', 'absent')">
+                                <label for="att_a_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='absent'?'bg-red-500 text-white shadow':'text-slate-400 hover:bg-slate-200'}">A</label>
+                                
+                                <input type="radio" name="att_${s.id}" id="att_l_${s.id}" value="leave" class="hidden att-radio" ${stat==='leave'?'checked':''} onchange="updateAttStatus('${s.id}', 'leave')">
+                                <label for="att_l_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='leave'?'bg-amber-500 text-white shadow':'text-slate-400 hover:bg-slate-200'}">L</label>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) { c.innerHTML = 'Error'; }
+        };
+        window.updateAttStatus = function(sid, stat) {
+            if(!attData[sid]) attData[sid] = { status: stat, reason: '' };
+            else attData[sid].status = stat;
+            
+            // Visual update
+            ['p','a','l'].forEach(v => {
+                const lbl = document.querySelector(`label[for="att_${v}_${sid}"]`);
+                if(lbl) {
+                    lbl.className = `w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat===v ? (v==='p'?'bg-emerald-500':v==='a'?'bg-red-500':'bg-amber-500')+' text-white shadow' : 'text-slate-400 hover:bg-slate-200'}`;
+                }
+            });
+
+            if(stat === 'leave') {
+                attTempLeaveStudent = sid;
+                document.getElementById('leave-reason-input').value = attData[sid].reason || '';
+                document.getElementById('leave-modal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('leave-content').classList.remove('scale-95'), 10);
+            } else {
+                attData[sid].reason = '';
+                document.getElementById(`reason_${sid}`).innerText = '';
+            }
+        };
+        window.closeLeaveModal = function() {
+            document.getElementById('leave-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('leave-modal').classList.add('hidden'), 200);
+        };
+        window.confirmLeaveReason = function() {
+            if(attTempLeaveStudent) {
+                const r = document.getElementById('leave-reason-input').value;
+                attData[attTempLeaveStudent].reason = r;
+                document.getElementById(`reason_${attTempLeaveStudent}`).innerText = r ? 'Leave: '+r : '';
+            }
+            closeLeaveModal();
+        };
+        window.saveAttendance = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            showLoading(true);
+            try {
+                await setDoc(getDocRef('attendance', `${cls.id}_${attDate}`), { classId: cls.id, date: attDate, records: attData });
+                showAlert("Saved", "Attendance saved successfully.", "success");
+            } catch(e) { showAlert("Error", "Failed to save.", "error"); }
+            showLoading(false);
+        };
+
+        // --- Task Evaluator ---
+        let evalData = {};
+        window.initTaskEvalView = function() {
+            const sel = document.getElementById('eval-task-select');
+            sel.innerHTML = '<option value="">-- Choose Task --</option>';
+            AppState.tasks.forEach(t => sel.add(new Option(`${t.title} (${t.points} pts)`, t.id)));
+            document.getElementById('eval-students-list').innerHTML = '';
+        };
+        window.loadTaskEvaluations = async function() {
+            const cls = getCurrentClassConfig(); const tId = document.getElementById('eval-task-select').value;
+            const c = document.getElementById('eval-students-list');
+            if(!tId || !cls) { c.innerHTML = ''; return; }
+            c.innerHTML = 'Loading...';
+            try {
+                const dateStr = new Date().toISOString().split('T')[0];
+                const q = await getDocs(getPublicRef('students'));
+                let stds = []; q.forEach(d => { let x=d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
+                stds.sort((a,b)=>a.rollNo-b.rollNo);
+                
+                const snap = await getDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`));
+                evalData = snap.exists() ? snap.data().records : {};
+
+                c.innerHTML = stds.map(s => {
+                    let val = evalData[s.id] && evalData[s.id][tId] === true;
+                    return `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300':''}" onclick="toggleEval('${s.id}', '${tId}')" id="eval_card_${s.id}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500 shadow-sm border border-slate-200">${s.rollNo}</div>
+                            <div class="font-bold text-slate-700 text-sm">${s.name}</div>
+                        </div>
+                        <div id="eval_icon_${s.id}">${val ? '<i class="fas fa-check-circle text-amber-500 text-2xl"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>'}</div>
+                    </div>`;
+                }).join('');
+            } catch(e) { c.innerHTML = 'Error'; }
+        };
+        window.toggleEval = function(sId, tId) {
+            if(!evalData[sId]) evalData[sId] = {};
+            evalData[sId][tId] = !evalData[sId][tId];
+            let val = evalData[sId][tId];
+            document.getElementById(`eval_card_${sId}`).className = `bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300':''}`;
+            document.getElementById(`eval_icon_${sId}`).innerHTML = val ? '<i class="fas fa-check-circle text-amber-500 text-2xl"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>';
+        };
+        window.saveTaskEvaluations = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const dateStr = new Date().toISOString().split('T')[0];
+            showLoading(true);
+            try {
+                await setDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`), { classId: cls.id, date: dateStr, records: evalData }, { merge: true });
+                showAlert("Saved", "Evaluations submitted.", "success");
+            } catch(e) { showAlert("Error", "Failed", "error"); }
+            showLoading(false);
+        };
+
+        // --- Daily Tracker (Existing QA Logic adapted) ---
+        let trData = {};
+        window.initTrackerView = function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const s = document.getElementById('tracker-subject-select');
+            s.innerHTML = '<option value="">-- Choose Subject --</option>';
+            (cls.subjects||[]).forEach(x => s.add(new Option(x,x)));
+            document.getElementById('tracker-students-list').innerHTML = '';
+        };
+        window.loadTrackerStudents = async function() {
+            const cls = getCurrentClassConfig(); const sub = document.getElementById('tracker-subject-select').value;
+            const c = document.getElementById('tracker-students-list');
+            if(!sub || !cls) { c.innerHTML = ''; return; }
+            c.innerHTML = 'Loading...';
+            try {
+                const qs = await getDocs(getPublicRef('students'));
+                let stds = []; qs.forEach(d => { let x=d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
+                stds.sort((a,b)=>a.rollNo-b.rollNo);
+                
+                const ds = new Date().toISOString().split('T')[0];
+                const snap = await getDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`));
+                trData = snap.exists() ? snap.data().students : {};
+                
+                c.innerHTML = stds.map(s => {
+                    let stat = trData[s.id] || 'pending';
+                    let bg = stat==='asked'?'bg-indigo-50 border-indigo-300':stat==='absent'?'bg-red-50 border-red-200 opacity-75':'bg-white border-slate-200';
+                    let ic = stat==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl"></i>':stat==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+                    return `
+                    <div onclick="cycleTrStat('${s.id}')" id="tr_c_${s.id}" class="flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all ${bg}">
+                        <div class="flex gap-4 items-center">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">${s.rollNo}</div>
+                            <div class="font-bold text-sm">${s.name}</div>
+                        </div>
+                        <div id="tr_i_${s.id}">${ic}</div>
+                    </div>`;
+                }).join('');
+            } catch(e) { c.innerHTML='Error'; }
+        };
+        window.cycleTrStat = function(sid) {
+            let cur = trData[sid] || 'pending', nxt = cur==='asked'?'absent':cur==='absent'?'pending':'asked';
+            trData[sid] = nxt;
+            document.getElementById(`tr_c_${sid}`).className = "flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all " + (nxt==='asked'?'bg-indigo-50 border-indigo-300':nxt==='absent'?'bg-red-50 border-red-200 opacity-75':'bg-white border-slate-200');
+            document.getElementById(`tr_i_${sid}`).innerHTML = nxt==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl"></i>':nxt==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+        };
+        window.saveDailyTracking = async function() {
+            const cls = getCurrentClassConfig(); const sub = document.getElementById('tracker-subject-select').value;
+            if(!cls || !sub) return;
+            const ds = new Date().toISOString().split('T')[0];
+            showLoading(true);
+            try {
+                await setDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`), { date: ds, subject: sub, classId: cls.id, students: trData, updatedAt: ds });
+                showAlert("Saved", "Daily tracking saved.", "success");
+            } catch(e) {} showLoading(false);
+        };
+
+        // --- Advanced Syllabus (User) ---
+        window.initUserSyllabusView = function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const s = document.getElementById('user-syllabus-subject');
+            s.innerHTML = '<option value="">-- Choose Subject --</option>';
+            (cls.subjects||[]).forEach(x => s.add(new Option(x,x)));
+            document.getElementById('user-syllabus-card').classList.add('hidden');
+        };
+        let curUsylSubj = '';
+        window.loadUserSyllabus = async function() {
+            const cls = getCurrentClassConfig(); curUsylSubj = document.getElementById('user-syllabus-subject').value;
+            const card = document.getElementById('user-syllabus-card');
+            if(!curUsylSubj || !cls) { card.classList.add('hidden'); return; }
+            showLoading(true);
+            try {
+                let conf = AppState.advSyllabus[curUsylSubj] || { total: '0', type: 'Units' };
+                const snap = await getDoc(getDocRef('syllabus_tracking', `${cls.id}_${curUsylSubj.replace(/\s+/g,'_')}`));
+                let comp = snap.exists() ? parseInt(snap.data().completed)||0 : 0;
+                
+                document.getElementById('usyl-title').innerText = curUsylSubj;
+                document.getElementById('usyl-type').innerText = conf.type;
+                document.getElementById('usyl-total').innerText = conf.total || 0;
+                document.getElementById('usyl-input').value = comp;
+                updateUsylBar(comp, parseInt(conf.total)||0);
+                card.classList.remove('hidden');
+            } catch(e) {} showLoading(false);
+        };
+        window.updateUsylCount = function(delta) {
+            let inp = document.getElementById('usyl-input');
+            let n = parseInt(inp.value)||0; n = Math.max(0, n + delta); inp.value = n;
+            let tot = parseInt(document.getElementById('usyl-total').innerText)||0;
+            updateUsylBar(n, tot);
+        };
+        function updateUsylBar(comp, tot) {
+            let pct = tot > 0 ? Math.min(100, (comp/tot)*100) : 0;
+            document.getElementById('usyl-bar').style.width = pct + '%';
+        }
+        window.saveUserSyllabus = async function() {
+            const cls = getCurrentClassConfig();
+            if(!cls || !curUsylSubj) return;
+            let comp = parseInt(document.getElementById('usyl-input').value)||0;
+            showLoading(true);
+            try {
+                await setDoc(getDocRef('syllabus_tracking', `${cls.id}_${curUsylSubj.replace(/\s+/g,'_')}`), { classId: cls.id, subject: curUsylSubj, completed: comp, updated: new Date().toISOString() });
+                showAlert("Success", "Progress updated.", "success");
+            } catch(e) {} showLoading(false);
+        };
+
+    </script>
+</body>
+</html>
