@@ -236,6 +236,33 @@
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
                 <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Academic Calendar</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Calendar Type</label>
+                        <select id="setup-cal-type" onchange="updateSetupMonths()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                            <option value="english">English (Gregorian)</option>
+                            <option value="arabic">Arabic (Hijri)</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Start Month</label>
+                            <select id="setup-cal-start" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">End Month</label>
+                            <select id="setup-cal-end" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
+                    Classes 
+                    <button onclick="adminAddClass()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 font-bold transition-colors"><i class="fas fa-plus"></i> Add Class</button>
+                </h3>
+                <div id="setup-classes-container" class="space-y-6">
                     <!-- Class configs injected here -->
                 </div>
             </div>
@@ -253,21 +280,23 @@
             </div>
             <p class="text-sm text-slate-500 mb-6">Add or edit students for the currently selected class.</p>
 
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
-                <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
-                <div class="flex gap-2">
-                    <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
-                    <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors whitespace-nowrap">Add</button>
+            <div id="admin-students-content">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                    <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
+                        <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors whitespace-nowrap">Add</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
-                    <span>Roll / Name</span>
-                    <span>Action</span>
-                </div>
-                <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
-                    <!-- Students list injected here -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                        <span>Roll / Name</span>
+                        <span>Action</span>
+                    </div>
+                    <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
+                        <!-- Students list injected here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -289,7 +318,6 @@
                     <option value="Wednesday">Wednesday</option>
                     <option value="Thursday">Thursday</option>
                     <option value="Saturday">Saturday</option>
-                    <!-- Friday usually holiday, can add if needed -->
                 </select>
             </div>
 
@@ -374,16 +402,20 @@
     <script type="module">
         // --- 1. Firebase Initialization & Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // Fallback for local testing if needed, but normally injected
+        // Your specific Firebase configuration
+        const firebaseConfig = {
             apiKey: "AIzaSyAfJSonmGHnf0t92B71ycuAZbc-CV3k7LE",
             authDomain: "fest-dsd-003.firebaseapp.com",
             projectId: "fest-dsd-003",
+            storageBucket: "fest-dsd-003.firebasestorage.app",
+            messagingSenderId: "409596394273",
+            appId: "1:409596394273:web:b930012ce0a845ddb45c60",
+            measurementId: "G-WSPJPQR032"
         };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-madrasa-app';
+        const appId = 'madrasa_tracker_v1'; // Fixed app ID for storage
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -399,14 +431,11 @@
         async function initApp() {
             showLoading(true);
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // We use anonymous sign-in to securely read/write based on our rules
+                await signInAnonymously(auth);
             } catch (error) {
                 console.error("Auth Error:", error);
-                showAlert("Authentication Failed", "Could not connect to database.", "error");
+                showAlert("Authentication Failed", "Please enable Anonymous Authentication in Firebase Console.", "error");
                 showLoading(false);
             }
         }
@@ -425,6 +454,7 @@
         // Initialize immediately
         initApp();
 
+        // --- STREAMING_CHUNK:Setting up Global Navigation and UI Helpers... ---
         // --- 3. UI Helpers & Navigation ---
         window.toggleMenu = function() {
             const menu = document.getElementById('side-menu');
@@ -445,13 +475,14 @@
             
             // Route handlers
             if(!AppState.currentClassId && viewId !== 'view-admin-setup') {
-                showAlert("Setup Required", "Please configure the app and select a class first.", "warning");
+                showAlert("Setup Required", "Please configure classes in Global Setup first.", "warning");
                 return;
             }
 
             if(viewId === 'view-home') renderHomeView();
             if(viewId === 'view-tracker') renderTrackerView();
             if(viewId === 'view-syllabus') renderSyllabusView();
+            if(viewId === 'view-admin-setup') renderAdminSetup();
             if(viewId === 'view-admin-students') renderAdminStudents();
             if(viewId === 'view-admin-timetable') renderAdminTimetableForm();
             if(viewId === 'view-admin-syllabus') renderAdminSyllabusForm();
@@ -486,23 +517,14 @@
             if (AppState.mode === 'admin') {
                 adminMenu.classList.remove('hidden');
                 userMenu.classList.add('hidden');
-                classSelector.classList.remove('hidden'); // Admin needs class selector often
+                classSelector.classList.remove('hidden'); 
                 menuTitle.innerText = "Admin Panel";
-                
-                // Force navigate to setup if no config
-                if (!AppState.config || !AppState.config.classes || AppState.config.classes.length === 0) {
-                    navigate('view-admin-setup');
-                    renderAdminSetup();
-                } else {
-                    navigate('view-admin-setup'); // Default admin page
-                    renderAdminSetup();
-                }
+                navigate('view-admin-setup'); 
             } else {
                 adminMenu.classList.add('hidden');
                 userMenu.classList.remove('hidden');
                 
                 if (!AppState.config || !AppState.config.classes || AppState.config.classes.length === 0) {
-                    // No config, cannot show user views. Tell them to switch to admin.
                     showAlert("App Not Configured", "Please switch to Admin mode to setup classes.", "warning");
                     classSelector.classList.add('hidden');
                 } else {
@@ -515,7 +537,6 @@
 
         window.changeGlobalClass = function(classId) {
             AppState.currentClassId = classId;
-            // Re-render current view based on new class
             navigate(AppState.currentView);
         };
 
@@ -530,7 +551,6 @@
                     opt.textContent = cls.name;
                     selector.appendChild(opt);
                 });
-                // Set initial class if not set
                 if (!AppState.currentClassId) {
                     AppState.currentClassId = AppState.config.classes[0].id;
                 }
@@ -548,11 +568,9 @@
 
         function getActiveMonthsList() {
             if (!AppState.config) return ENGLISH_MONTHS;
-            const list = AppState.config.calendarType === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
-            return list; 
+            return AppState.config.calendarType === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
         }
 
-        // --- Header UI Update ---
         window.updateHeaderUI = function() {
             const config = AppState.config || {};
             
@@ -587,7 +605,6 @@
             
             const iconContainer = document.getElementById('alert-icon-container');
             const icon = document.getElementById('alert-icon');
-            
             iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4";
             
             if (type === 'success') {
@@ -620,8 +637,8 @@
             else el.classList.add('hidden');
         }
 
+        // --- STREAMING_CHUNK:Setting up Database Helpers... ---
         // --- 4. Database Operations ---
-
         const getPublicRef = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
         const getConfigDoc = () => doc(db, 'artifacts', appId, 'public', 'data', 'config', 'global');
         const getTimetableDoc = (classId) => doc(db, 'artifacts', appId, 'public', 'data', 'config', `timetable_${classId}`);
@@ -641,6 +658,7 @@
             }
         }
 
+        // --- STREAMING_CHUNK:Implementing Admin Features (Cropper & Setup)... ---
         // --- 5. Admin View Renderers ---
 
         let cropperInstance = null;
@@ -654,14 +672,11 @@
                     img.src = e.target.result;
                     document.getElementById('cropper-modal').classList.remove('hidden');
                     
-                    if (cropperInstance) {
-                        cropperInstance.destroy();
-                    }
+                    if (cropperInstance) cropperInstance.destroy();
                     
-                    // Initialize cropper after a tiny delay to allow modal render
                     setTimeout(() => {
                         cropperInstance = new Cropper(img, {
-                            aspectRatio: 1, // Force square crop
+                            aspectRatio: 1, 
                             viewMode: 2,
                             dragMode: 'move',
                             autoCropArea: 0.9,
@@ -676,7 +691,7 @@
                     }, 50);
                 };
                 reader.readAsDataURL(file);
-                event.target.value = ''; // Reset input to allow re-uploading same file
+                event.target.value = ''; 
             }
         };
 
@@ -690,20 +705,13 @@
 
         window.applyCrop = function() {
             if (!cropperInstance) return;
-            
             showLoading(true);
             setTimeout(() => {
-                // Get cropped canvas (limit dimensions to save space)
-                const canvas = cropperInstance.getCroppedCanvas({
-                    width: 400, 
-                    height: 400
-                });
-                
+                const canvas = cropperInstance.getCroppedCanvas({ width: 400, height: 400 });
                 let quality = 0.9;
                 let base64String = canvas.toDataURL('image/jpeg', quality);
                 
-                // Compress until size is roughly <= 200KB (200KB = 204800 bytes)
-                // Base64 size formula approx: length * (3/4)
+                // Compress until under ~200kb
                 while ((base64String.length * 0.75) > 204800 && quality > 0.1) {
                     quality -= 0.1;
                     base64String = canvas.toDataURL('image/jpeg', quality);
@@ -731,7 +739,6 @@
         window.renderAdminSetup = function() {
             const config = AppState.config;
             
-            // Populate Institution Details
             document.getElementById('setup-inst-name').value = config.instName || '';
             document.getElementById('setup-inst-sub').value = config.instSubtitle || '';
             
@@ -742,19 +749,15 @@
                 document.getElementById('setup-logo-icon').classList.add('hidden');
                 document.getElementById('btn-remove-logo').classList.remove('hidden');
             } else {
-                document.getElementById('setup-logo-base64').value = '';
-                document.getElementById('setup-logo-preview').src = '';
-                document.getElementById('setup-logo-preview').classList.add('hidden');
-                document.getElementById('setup-logo-icon').classList.remove('hidden');
-                document.getElementById('btn-remove-logo').classList.add('hidden');
+                removeLogo();
             }
 
             document.getElementById('setup-cal-type').value = config.calendarType || 'english';
             window.updateSetupMonths();
             
             setTimeout(() => {
-                document.getElementById('setup-cal-start').value = config.startMonth || '';
-                document.getElementById('setup-cal-end').value = config.endMonth || '';
+                document.getElementById('setup-cal-start').value = config.startMonth || 'January';
+                document.getElementById('setup-cal-end').value = config.endMonth || 'December';
             }, 50);
 
             renderAdminClassesList();
@@ -802,7 +805,6 @@
         window.updateClassSubjects = function(classId, value) {
             const cls = AppState.config.classes.find(c => c.id === classId);
             if (cls) {
-                // simple comma separated parsing
                 cls.subjects = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
             }
         };
@@ -811,30 +813,30 @@
             const container = document.getElementById('setup-classes-container');
             container.innerHTML = '';
             
-            if(AppState.config.classes.length === 0) {
-                container.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No classes added yet.</p>';
+            if(!AppState.config.classes || AppState.config.classes.length === 0) {
+                container.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><i class="fas fa-chalkboard-teacher text-2xl text-slate-300 mb-2 block"></i><p class="text-sm text-slate-500">No classes added yet. Click "Add Class" to get started.</p></div>';
                 return;
             }
 
             AppState.config.classes.forEach(cls => {
                 const subjsStr = (cls.subjects || []).join(', ');
                 container.innerHTML += `
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
-                        <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200"><i class="fas fa-trash text-xs"></i></button>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative shadow-sm">
+                        <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition-colors"><i class="fas fa-trash text-xs"></i></button>
                         
                         <div class="mb-3 pr-10">
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Class Name</label>
-                            <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-bold text-[#0f172a]">
+                            <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-bold text-[#0f172a] focus:border-blue-500 outline-none transition-colors">
                         </div>
                         
-                        <div class="grid grid-cols-3 gap-3 mb-3">
-                            <div class="col-span-1">
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Periods</label>
-                                <input type="number" min="1" max="10" value="${cls.periodsCount || 3}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-center">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div class="md:col-span-1">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Periods / Day</label>
+                                <input type="number" min="1" max="10" value="${cls.periodsCount || 3}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-center focus:border-blue-500 outline-none transition-colors">
                             </div>
-                            <div class="col-span-2">
+                            <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subjects (Comma separated)</label>
-                                <input type="text" value="${subjsStr}" onchange="updateClassSubjects('${cls.id}', this.value)" placeholder="e.g. Quran, Fiqh, Aqeedah" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm">
+                                <input type="text" value="${subjsStr}" onchange="updateClassSubjects('${cls.id}', this.value)" placeholder="e.g. Quran, Fiqh, Aqeedah" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-blue-500 outline-none transition-colors">
                             </div>
                         </div>
                     </div>
@@ -856,7 +858,6 @@
 
                 await setDoc(getConfigDoc(), AppState.config);
                 
-                // Refresh header & selector
                 updateHeaderUI();
                 setupGlobalClassSelector();
                 showAlert("Success", "Global configuration saved successfully.", "success");
@@ -867,17 +868,28 @@
             showLoading(false);
         };
 
+        // --- STREAMING_CHUNK:Implementing Admin Sub-Modules (Students, Timetable, Syllabus)... ---
         // --- Admin: Students ---
         window.renderAdminStudents = async function() {
             const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
+            const listEl = document.getElementById('admin-students-list');
+            const contentContainer = document.getElementById('admin-students-content');
+            
+            if(!classConfig) {
+                contentContainer.innerHTML = '<div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100"><i class="fas fa-exclamation-circle text-4xl text-yellow-400 mb-3 block"></i><p class="text-slate-600 font-medium">Please add a class in Global Setup and select it from the top menu first.</p></div>';
+                return;
+            } else {
+                if(!document.getElementById('new-student-name')) {
+                    // Safe reload of the view structure
+                    navigate(AppState.currentView); 
+                    return;
+                }
+            }
             
             showLoading(true);
-            const listEl = document.getElementById('admin-students-list');
             listEl.innerHTML = '';
             
             try {
-                // Use a standard collection query, filter in memory
                 const querySnapshot = await getDocs(getPublicRef('students'));
                 let students = [];
                 querySnapshot.forEach(doc => {
@@ -890,7 +902,7 @@
                 students.sort((a,b) => a.rollNo - b.rollNo);
 
                 if (students.length === 0) {
-                    listEl.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No students found for this class.</div>';
+                    listEl.innerHTML = '<div class="p-6 text-center text-sm text-slate-400">No students found for this class. Add one above.</div>';
                 } else {
                     students.forEach(s => {
                         listEl.innerHTML += `
@@ -899,7 +911,7 @@
                                     <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">${s.rollNo}</div>
                                     <div class="text-sm font-bold text-slate-800">${s.name}</div>
                                 </div>
-                                <button onclick="deleteStudent('${s.docId}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100"><i class="fas fa-trash text-xs"></i></button>
+                                <button onclick="deleteStudent('${s.docId}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"><i class="fas fa-trash text-xs"></i></button>
                             </div>
                         `;
                     });
@@ -913,14 +925,14 @@
 
         window.adminAddStudent = async function() {
             const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
+            if(!classConfig) { showAlert("Error", "No class selected.", "error"); return; }
+            
             const nameInput = document.getElementById('new-student-name');
             const name = nameInput.value.trim();
-            if(!name) { showAlert("Error", "Enter student name.", "warning"); return; }
+            if(!name) { showAlert("Warning", "Enter student name.", "warning"); return; }
 
             showLoading(true);
             try {
-                // Get next roll number
                 const querySnapshot = await getDocs(getPublicRef('students'));
                 let maxRoll = 0;
                 querySnapshot.forEach(doc => {
@@ -938,6 +950,7 @@
                 
                 nameInput.value = '';
                 await renderAdminStudents();
+                showAlert("Success", "Student added successfully.", "success");
             } catch(e) {
                 console.error(e);
                 showAlert("Error", "Could not add student.", "error");
@@ -946,7 +959,7 @@
         };
 
         window.deleteStudent = async function(docId) {
-            if(!confirm("Delete this student?")) return;
+            if(!confirm("Are you sure you want to delete this student?")) return;
             showLoading(true);
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'students', docId));
@@ -960,13 +973,19 @@
         // --- Admin: Timetable ---
         window.renderAdminTimetableForm = async function() {
             const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
+            const container = document.getElementById('admin-timetable-periods');
+            const dayTitle = document.getElementById('admin-timetable-day-title');
+            
+            if(!classConfig) {
+                container.innerHTML = '<div class="text-center p-6"><i class="fas fa-exclamation-circle text-3xl text-yellow-400 mb-2 block"></i><p class="text-sm text-slate-500">Please select a class from the top menu.</p></div>';
+                if(dayTitle) dayTitle.innerText = "Setup Required";
+                return;
+            }
             
             const day = document.getElementById('admin-timetable-day').value;
-            document.getElementById('admin-timetable-day-title').innerText = `${day} Timetable`;
+            if(dayTitle) dayTitle.innerText = `${day} Timetable`;
             
-            const container = document.getElementById('admin-timetable-periods');
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center">Loading...</p>';
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
             
             try {
                 const ttDoc = await getDoc(getTimetableDoc(classConfig.id));
@@ -980,43 +999,49 @@
                 let subOptions = `<option value="">-- Free / None --</option>`;
                 subjects.forEach(s => subOptions += `<option value="${s}">${s}</option>`);
 
+                if (subjects.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-center">No subjects found for this class. Add subjects in Global Setup.</p>';
+                }
+
                 for(let i=0; i<maxP; i++) {
                     const pData = dayData[i] || { start: '', end: '', subject: '' };
                     container.innerHTML += `
-                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                            <div class="text-xs font-bold text-blue-600 uppercase mb-2">Period ${i+1}</div>
-                            <div class="grid grid-cols-2 gap-3 mb-2">
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 shadow-sm">
+                            <div class="text-xs font-bold text-blue-600 uppercase mb-3 flex items-center gap-2"><i class="far fa-clock"></i> Period ${i+1}</div>
+                            <div class="grid grid-cols-2 gap-4 mb-3">
                                 <div>
-                                    <label class="block text-[10px] text-slate-500 uppercase">Start Time</label>
-                                    <input type="time" id="tt_start_${i}" value="${pData.start}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Start Time</label>
+                                    <input type="time" id="tt_start_${i}" value="${pData.start}" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] text-slate-500 uppercase">End Time</label>
-                                    <input type="time" id="tt_end_${i}" value="${pData.end}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">End Time</label>
+                                    <input type="time" id="tt_end_${i}" value="${pData.end}" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-[10px] text-slate-500 uppercase">Subject</label>
-                                <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm font-medium outline-none focus:border-blue-500">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject</label>
+                                <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-medium outline-none focus:border-blue-500 transition-colors">
                                     ${subOptions}
                                 </select>
                             </div>
                         </div>
                     `;
-                    // Set selected subject after injection
                     setTimeout(() => {
-                        if(pData.subject) document.getElementById(`tt_sub_${i}`).value = pData.subject;
+                        if(pData.subject && document.getElementById(`tt_sub_${i}`)) {
+                            document.getElementById(`tt_sub_${i}`).value = pData.subject;
+                        }
                     }, 10);
                 }
             } catch(e) {
                 console.error(e);
-                container.innerHTML = '<p class="text-sm text-red-500">Error loading timetable data.</p>';
+                container.innerHTML = '<p class="text-sm text-red-500 text-center p-4">Error loading timetable data.</p>';
             }
         };
 
         window.saveAdminTimetable = async function() {
             const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
+            if(!classConfig) { showAlert("Error", "No class selected.", "error"); return; }
+            
             const day = document.getElementById('admin-timetable-day').value;
             const maxP = classConfig.periodsCount || 3;
             
@@ -1032,9 +1057,8 @@
             showLoading(true);
             try {
                 const ttRef = getTimetableDoc(classConfig.id);
-                // merge
                 await setDoc(ttRef, { [day]: dayArray }, { merge: true });
-                showAlert("Saved", `Timetable for ${day} saved.`, "success");
+                showAlert("Saved", `Timetable for ${day} saved successfully.`, "success");
             } catch(e) {
                 console.error(e);
                 showAlert("Error", "Could not save timetable.", "error");
@@ -1045,17 +1069,21 @@
         // --- Admin: Syllabus ---
         window.renderAdminSyllabusForm = async function() {
             const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
-
+            const container = document.getElementById('admin-syllabus-subjects');
             const monthSel = document.getElementById('admin-syllabus-month');
+            
+            if(!classConfig) {
+                container.innerHTML = '<div class="text-center p-6"><i class="fas fa-exclamation-circle text-3xl text-yellow-400 mb-2 block"></i><p class="text-sm text-slate-500">Please select a class from the top menu.</p></div>';
+                return;
+            }
+
             if(monthSel.options.length === 0) {
                 const months = getActiveMonthsList();
                 months.forEach(m => monthSel.add(new Option(m, m)));
             }
 
             const month = monthSel.value;
-            const container = document.getElementById('admin-syllabus-subjects');
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center">Loading...</p>';
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
 
             try {
                 const sylDoc = await getDoc(getSyllabusDoc(classConfig.id));
@@ -1066,31 +1094,32 @@
                 const subjects = classConfig.subjects || [];
                 
                 if(subjects.length === 0) {
-                    container.innerHTML = '<p class="text-sm text-slate-500">No subjects defined for this class.</p>';
+                    container.innerHTML = '<p class="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-center">No subjects defined for this class.</p>';
                     return;
                 }
 
                 subjects.forEach((s, idx) => {
                     const target = monthData[s] || '';
                     container.innerHTML += `
-                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm hover:border-purple-300 transition-colors">
                             <div class="font-bold text-slate-700 text-sm w-1/2">${s}</div>
-                            <div class="w-1/2 flex items-center gap-2 justify-end">
-                                <span class="text-xs text-slate-500 uppercase font-bold">Target Lsn:</span>
-                                <input type="number" id="syl_tgt_${idx}" value="${target}" class="w-20 bg-white border border-slate-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-purple-500">
+                            <div class="w-1/2 flex items-center gap-3 justify-end">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Target Lsn:</span>
+                                <input type="number" id="syl_tgt_${idx}" value="${target}" class="w-20 bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm text-center outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
                             </div>
                         </div>
                     `;
                 });
             } catch(e) {
                 console.error(e);
-                container.innerHTML = '<p class="text-sm text-red-500">Error loading syllabus data.</p>';
+                container.innerHTML = '<p class="text-sm text-red-500 text-center p-4">Error loading syllabus data.</p>';
             }
         };
 
         window.saveAdminSyllabus = async function() {
             const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
+            if(!classConfig) { showAlert("Error", "No class selected.", "error"); return; }
+            
             const month = document.getElementById('admin-syllabus-month').value;
             const subjects = classConfig.subjects || [];
             
@@ -1111,6 +1140,7 @@
             showLoading(false);
         };
 
+        // --- STREAMING_CHUNK:Implementing User Views (Home, Tracker, Progress)... ---
         // --- 6. User Views Renderers ---
 
         window.renderHomeView = async function() {
@@ -1135,7 +1165,6 @@
                 let ttData = ttDoc.exists() ? ttDoc.data() : {};
                 let dayData = ttData[dayName] || [];
 
-                // Filter out empty periods
                 dayData = dayData.filter(p => p.subject && p.subject.trim() !== '');
 
                 if (dayData.length === 0) {
@@ -1145,7 +1174,6 @@
                     container.innerHTML = '';
                     dayData.forEach((p, idx) => {
                         const timeStr = (p.start && p.end) ? `${p.start} - ${p.end}` : 'Time not set';
-                        // Generate a random pastel color based on subject name length for visual variety
                         const colors = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200', 'bg-purple-50 text-purple-800 border-purple-200'];
                         const colClass = colors[p.subject.length % colors.length];
 
@@ -1167,7 +1195,6 @@
             }
         };
 
-        // Current state for tracker
         let trackerData = {}; 
 
         window.renderTrackerView = async function() {
@@ -1175,7 +1202,6 @@
             if(!classConfig) return;
 
             const subSel = document.getElementById('tracker-subject-select');
-            // Store current selection if any
             const currentSub = subSel.value;
             
             subSel.innerHTML = '<option value="">-- Choose Subject --</option>';
@@ -1201,7 +1227,6 @@
             listEl.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-green-500"></i></div>';
             
             try {
-                // Get students
                 const qs = await getDocs(getPublicRef('students'));
                 let students = [];
                 qs.forEach(d => {
@@ -1210,7 +1235,6 @@
                 });
                 students.sort((a,b) => a.rollNo - b.rollNo);
 
-                // Get today's tracking data if exists
                 const dateStr = new Date().toISOString().split('T')[0];
                 const trackId = `${classConfig.id}_${dateStr}_${subject.replace(/\s+/g,'_')}`;
                 
@@ -1224,7 +1248,7 @@
                 }
 
                 students.forEach(s => {
-                    const status = trackerData[s.id] || 'pending'; // pending, asked, absent
+                    const status = trackerData[s.id] || 'pending'; 
                     
                     let bgClass = 'bg-white border-slate-200';
                     let icon = '<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
@@ -1261,7 +1285,6 @@
             
             trackerData[sid] = next;
             
-            // Fast UI update
             const card = document.getElementById(`card_${sid}`);
             const iconC = document.getElementById(`icon_${sid}`);
             
@@ -1302,7 +1325,6 @@
             showLoading(false);
         };
 
-        // --- Syllabus View ---
         window.renderSyllabusView = async function() {
             const classConfig = getCurrentClassConfig();
             if(!classConfig) return;
@@ -1326,11 +1348,9 @@
             container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-purple-500"></i></div>';
 
             try {
-                // Get Target Data
                 const sylDoc = await getDoc(getSyllabusDoc(classConfig.id));
                 const targetData = (sylDoc.exists() ? sylDoc.data()[month] : {}) || {};
                 
-                // Get Progress Data
                 const progDocId = `${classConfig.id}_${month.replace(/\s+/g,'_')}`;
                 const progDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'syllabus_tracking', progDocId));
                 const progressData = (progDoc.exists() ? progDoc.data().completed : {}) || {};
@@ -1401,7 +1421,7 @@
                     updatedAt: new Date().toISOString()
                 });
                 showAlert("Saved", "Syllabus progress updated.", "success");
-                await loadSyllabusProgress(); // refresh bars
+                await loadSyllabusProgress();
             } catch(e) {
                 console.error(e);
                 showAlert("Error", "Could not save progress.", "error");
@@ -1411,4 +1431,4 @@
 
     </script>
 </body>
-</html>1
+</html>
