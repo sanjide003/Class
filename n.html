@@ -511,7 +511,6 @@
             authDomain: "fest-dsd-003.firebaseapp.com",
             projectId: "fest-dsd-003",
         };
-        const appId = 'madrasa_tracker_v2';
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -521,8 +520,9 @@
         const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
         const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-        const getPublicRef = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
-        const getDocRef = (type, id) => doc(db, 'artifacts', appId, 'public', 'data', type, id);
+        // പുതിയ ഡാറ്റാബേസ് പാത്ത്: /madrasa/public/data/...
+        const getPublicRef = (colName) => collection(db, 'madrasa', 'public', 'data', colName);
+        const getDocRef = (type, id) => doc(db, 'madrasa', 'public', 'data', type, id);
 
         async function initApp() {
             showLoading(true);
