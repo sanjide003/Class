@@ -23,7 +23,18 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
         .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
 
-        /* Custom Radio Buttons */
+        /* Unified Chip Radio Styles (Tabs) */
+        .chip-input:checked + .chip-label { background-color: #0f172a; color: white; border-color: #0f172a; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.3); }
+        .chip-input-amber:checked + .chip-label { background-color: #f59e0b; color: white; border-color: #f59e0b; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3); }
+        .chip-input-indigo:checked + .chip-label { background-color: #4f46e5; color: white; border-color: #4f46e5; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); }
+        .chip-input-purple:checked + .chip-label { background-color: #9333ea; color: white; border-color: #9333ea; box-shadow: 0 4px 6px -1px rgba(147, 51, 234, 0.3); }
+        .chip-input-blue:checked + .chip-label { background-color: #2563eb; color: white; border-color: #2563eb; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
+        
+        /* Segmented Control Styles */
+        .segmented-radio:checked + .segmented-label { background-color: white; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .segmented-label { color: #64748b; }
+
+        /* Custom Attendance Radio Buttons */
         .att-radio:checked + label { transform: scale(0.95); }
     </style>
 </head>
@@ -46,17 +57,17 @@
         <div class="px-4 py-3 flex justify-between items-center max-w-md mx-auto">
             <!-- Logo & Title -->
             <div class="flex items-center gap-3">
-                <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative">
+                <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative shadow-sm">
                     <span id="app-logo-fallback">നൂർ</span>
                     <img id="app-header-logo" src="" class="w-full h-full object-cover hidden absolute inset-0">
                 </div>
                 <div>
                     <h1 id="app-header-title" class="font-bold text-sm text-[#0f172a] leading-tight tracking-wide">NOORUN ALA NOOR</h1>
-                    <p id="app-header-subtitle" class="text-[10px] text-slate-500 font-medium uppercase">MADRASA TRACKER</p>
+                    <p id="app-header-subtitle" class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">MADRASA TRACKER</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 relative">
                 <!-- Mode Switcher -->
                 <div class="flex items-center justify-center">
                     <label for="mode-toggle" class="flex items-center cursor-pointer">
@@ -71,59 +82,46 @@
                 </div>
                 
                 <!-- Menu Button -->
-                <button onclick="toggleMenu()" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 bg-slate-100 rounded-md">
+                <button onclick="toggleMenu()" id="menu-btn" class="text-slate-700 hover:text-[#0f172a] focus:outline-none p-2 bg-slate-100 rounded-md transition-colors relative z-50">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Global Class Selector -->
-    <div id="class-selector-container" class="fixed top-[65px] w-full z-30 bg-white/90 backdrop-blur-sm border-b border-slate-200 shadow-sm hidden">
-        <div class="max-w-md mx-auto px-4 py-2 flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase">Selected Class:</span>
-            <select id="global-class-selector" onchange="changeGlobalClass(this.value)" class="bg-slate-100 border-none text-sm font-bold text-[#0f172a] rounded-md px-3 py-1 focus:ring-0 cursor-pointer w-48 truncate">
-                <!-- Options populated dynamically -->
-            </select>
+    <!-- Global Class Selector (Horizontal Scrollable Chips) -->
+    <div id="class-selector-container" class="fixed top-[65px] w-full z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm hidden">
+        <div class="max-w-md mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto hide-scrollbar" id="global-class-chips">
+            <!-- Class chips populated dynamically -->
         </div>
     </div>
 
-    <!-- Dropdown Menu -->
-    <div id="side-menu" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="toggleMenu()"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-64 bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="menu-panel">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-[#f8fafc]">
-                <h2 class="font-bold text-slate-800" id="menu-title">Menu</h2>
-                <button onclick="toggleMenu()" class="p-2 text-slate-500 hover:text-slate-800"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <!-- User Menu Links -->
-            <nav id="menu-user" class="flex-1 overflow-y-auto p-4 space-y-1">
-                <a href="#" onclick="navigate('view-home');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-home w-5 text-blue-500"></i> Home Dashboard</a>
-                <a href="#" onclick="navigate('view-attendance');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-user-check w-5 text-emerald-500"></i> Smart Attendance</a>
-                <a href="#" onclick="navigate('view-tasks-eval');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-star w-5 text-amber-500"></i> Task Evaluator</a>
-                <a href="#" onclick="navigate('view-tracker');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-clipboard-question w-5 text-indigo-500"></i> Daily Tracker</a>
-                <a href="#" onclick="navigate('view-adv-syllabus-user');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-book-open w-5 text-purple-500"></i> Syllabus Planner</a>
-            </nav>
+    <!-- NEW Dropdown Menu Overlay & Box -->
+    <div id="menu-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/10 backdrop-blur-[1px]" onclick="toggleMenu()"></div>
+    
+    <div id="dropdown-menu" class="fixed top-[65px] right-4 w-56 bg-white rounded-2xl shadow-2xl z-50 transform origin-top-right transition-all duration-200 scale-0 opacity-0 flex flex-col border border-slate-100">
+        <!-- User Menu Links -->
+        <nav id="menu-user" class="p-2 space-y-1">
+            <a href="#" onclick="navigate('view-home');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-home w-5 text-blue-500 text-center"></i> Home</a>
+            <a href="#" onclick="navigate('view-attendance');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-user-check w-5 text-emerald-500 text-center"></i> Attendance</a>
+            <a href="#" onclick="navigate('view-tasks-eval');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-star w-5 text-amber-500 text-center"></i> Tasks</a>
+            <a href="#" onclick="navigate('view-tracker');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-clipboard-question w-5 text-indigo-500 text-center"></i> Tracker</a>
+            <a href="#" onclick="navigate('view-adv-syllabus-user');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-book-open w-5 text-purple-500 text-center"></i> Syllabus</a>
+        </nav>
 
-            <!-- Admin Menu Links -->
-            <nav id="menu-admin" class="flex-1 overflow-y-auto p-4 space-y-1 hidden">
-                <div class="text-[10px] font-bold text-slate-400 uppercase mb-2 px-3 tracking-wider">Administration</div>
-                <a href="#" onclick="navigate('view-admin-setup');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-cogs w-5 text-slate-600"></i> Global Setup</a>
-                <a href="#" onclick="navigate('view-admin-students');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-users w-5 text-slate-600"></i> Manage Students</a>
-                <a href="#" onclick="navigate('view-admin-timetable');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-calendar-alt w-5 text-slate-600"></i> Timetable Editor</a>
-                <a href="#" onclick="navigate('view-admin-tasks');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-tasks w-5 text-slate-600"></i> Task Builder</a>
-                <a href="#" onclick="navigate('view-admin-adv-syllabus');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-lg font-medium transition-colors"><i class="fas fa-chart-line w-5 text-slate-600"></i> Syllabus Setup</a>
-            </nav>
-            
-            <div class="p-4 border-t border-slate-100 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                ERP System v3.0
-            </div>
-        </div>
+        <!-- Admin Menu Links -->
+        <nav id="menu-admin" class="p-2 space-y-1 hidden">
+            <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 px-3 mt-1 tracking-wider">Administration</div>
+            <a href="#" onclick="navigate('view-admin-setup');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-cogs w-5 text-slate-600 text-center"></i> App Setup</a>
+            <a href="#" onclick="navigate('view-admin-students');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-users w-5 text-slate-600 text-center"></i> Students</a>
+            <a href="#" onclick="navigate('view-admin-timetable');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-calendar-alt w-5 text-slate-600 text-center"></i> Timetable</a>
+            <a href="#" onclick="navigate('view-admin-tasks');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-tasks w-5 text-slate-600 text-center"></i> Task Builder</a>
+            <a href="#" onclick="navigate('view-admin-adv-syllabus');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-chart-line w-5 text-slate-600 text-center"></i> Syllabus Setup</a>
+        </nav>
     </div>
 
     <!-- Main Content Area -->
-    <main class="max-w-md mx-auto pt-32 pb-20 px-4 min-h-screen relative" id="main-container">
+    <main class="max-w-md mx-auto pt-[130px] pb-20 px-4 min-h-screen relative" id="main-container">
         
         <div id="loading-overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#f8fafc]">
             <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
@@ -139,7 +137,7 @@
                     <h2 class="text-2xl font-bold text-[#0f172a]" id="home-day-title">Today</h2>
                     <p class="text-sm text-slate-500" id="home-date-subtitle">Loading...</p>
                 </div>
-                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold" id="home-class-badge">Class --</div>
+                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm" id="home-class-badge">Class --</div>
             </div>
             
             <div id="home-timetable-container" class="space-y-4"></div>
@@ -154,15 +152,16 @@
         <!-- View: Attendance -->
         <div id="view-attendance" class="app-view hidden">
             <h2 class="text-xl font-bold text-[#0f172a] mb-2">Smart Attendance</h2>
+            
             <div class="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                <i class="fas fa-calendar-day text-blue-500"></i>
+                <i class="fas fa-calendar-day text-emerald-500"></i>
                 <input type="date" id="attendance-date" class="bg-transparent border-none outline-none font-bold text-slate-700 text-sm flex-1" onchange="loadAttendance()">
             </div>
 
             <div id="attendance-students-list" class="space-y-3"></div>
             
-            <div class="mt-8 sticky bottom-4">
-                <button onclick="saveAttendance()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-xl hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+            <div class="mt-8 sticky bottom-4 z-10">
+                <button onclick="saveAttendance()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-emerald-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
                     <i class="fas fa-save"></i> Save Attendance
                 </button>
             </div>
@@ -171,17 +170,13 @@
         <!-- View: Task Evaluator -->
         <div id="view-tasks-eval" class="app-view hidden">
             <h2 class="text-xl font-bold text-[#0f172a] mb-2">Task Evaluator</h2>
-            <p class="text-xs text-slate-500 mb-6">Select a task to evaluate students for today.</p>
+            <p class="text-xs text-slate-500 mb-4">Select a task below to evaluate students.</p>
 
-            <div class="mb-4">
-                <select id="eval-task-select" onchange="loadTaskEvaluations()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all font-medium appearance-none">
-                    <option value="">-- Choose Task --</option>
-                </select>
-            </div>
+            <div id="eval-task-container" class="mb-4"></div>
 
             <div id="eval-students-list" class="space-y-3 mt-4"></div>
 
-            <div class="mt-8 sticky bottom-4">
+            <div class="mt-8 sticky bottom-4 z-10">
                 <button onclick="saveTaskEvaluations()" class="w-full bg-amber-500 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-amber-600 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
                     <i class="fas fa-check-double"></i> Submit Evaluations
                 </button>
@@ -191,17 +186,13 @@
         <!-- View: Daily Tracker (Questions) -->
         <div id="view-tracker" class="app-view hidden">
             <h2 class="text-xl font-bold text-[#0f172a] mb-2">Daily Tracker</h2>
-            <p class="text-xs text-slate-500 mb-6">Track daily QA and homework checks.</p>
+            <p class="text-xs text-slate-500 mb-4">Select a subject below to track QA and homework.</p>
 
-            <div class="mb-4">
-                <select id="tracker-subject-select" onchange="loadTrackerStudents()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium appearance-none">
-                    <option value="">-- Choose Subject --</option>
-                </select>
-            </div>
+            <div id="tracker-subject-container" class="mb-4"></div>
 
             <div id="tracker-students-list" class="space-y-3 mt-4"></div>
             
-            <div class="mt-8 sticky bottom-4">
+            <div class="mt-8 sticky bottom-4 z-10">
                 <button onclick="saveDailyTracking()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-indigo-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
                     <i class="fas fa-save"></i> Save Tracking
                 </button>
@@ -211,13 +202,9 @@
         <!-- View: Syllabus Planner (User) -->
         <div id="view-adv-syllabus-user" class="app-view hidden">
             <h2 class="text-xl font-bold text-[#0f172a] mb-2">Syllabus Planner</h2>
-            <p class="text-xs text-slate-500 mb-6">Update total lessons/pages completed.</p>
+            <p class="text-xs text-slate-500 mb-4">Select a subject to update lessons completed.</p>
 
-            <div class="mb-4">
-                <select id="user-syllabus-subject" onchange="loadUserSyllabus()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium appearance-none">
-                    <option value="">-- Choose Subject --</option>
-                </select>
-            </div>
+            <div id="user-syllabus-subject-container" class="mb-4"></div>
 
             <div id="user-syllabus-card" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mt-4 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
@@ -231,21 +218,21 @@
                     <span>Total: <span id="usyl-total" class="font-bold">0</span></span>
                 </div>
                 
-                <div class="w-full bg-slate-100 rounded-full h-3 mb-4 overflow-hidden relative">
+                <div class="w-full bg-slate-100 rounded-full h-3 mb-4 overflow-hidden relative shadow-inner">
                     <div id="usyl-bar" class="bg-purple-500 h-full rounded-full transition-all duration-1000 w-0"></div>
                 </div>
 
                 <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <div class="flex-1 text-xs font-bold text-slate-600">Update Progress:</div>
                     <div class="flex items-center gap-2">
-                        <button onclick="updateUsylCount(-1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100"><i class="fas fa-minus"></i></button>
-                        <input type="number" id="usyl-input" class="w-16 h-8 text-center font-bold text-sm bg-white border border-slate-300 rounded-lg outline-none focus:border-purple-500" value="0">
-                        <button onclick="updateUsylCount(1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100"><i class="fas fa-plus"></i></button>
+                        <button onclick="updateUsylCount(-1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm"><i class="fas fa-minus"></i></button>
+                        <input type="number" id="usyl-input" class="w-16 h-8 text-center font-bold text-sm bg-white border border-slate-300 rounded-lg outline-none focus:border-purple-500 shadow-inner" value="0">
+                        <button onclick="updateUsylCount(1)" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 shadow-sm"><i class="fas fa-plus"></i></button>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-8 sticky bottom-4">
+            <div class="mt-8 sticky bottom-4 z-10">
                 <button onclick="saveUserSyllabus()" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-purple-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
                     <i class="fas fa-sync-alt"></i> Update Syllabus
                 </button>
@@ -294,20 +281,23 @@
                 <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Academic Calendar</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Calendar Type</label>
-                        <select id="setup-cal-type" onchange="updateSetupMonths()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
-                            <option value="english">English (Gregorian)</option>
-                            <option value="arabic">Arabic (Hijri)</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Calendar Type</label>
+                        <div class="flex bg-slate-100 rounded-lg p-1 gap-1 shadow-inner">
+                            <input type="radio" name="cal_type" id="cal_eng" value="english" class="hidden segmented-radio" checked onchange="updateSetupMonths()">
+                            <label for="cal_eng" class="flex-1 text-center py-2 rounded-md text-xs font-bold cursor-pointer transition-all segmented-label">English</label>
+                            
+                            <input type="radio" name="cal_type" id="cal_arb" value="arabic" class="hidden segmented-radio" onchange="updateSetupMonths()">
+                            <label for="cal_arb" class="flex-1 text-center py-2 rounded-md text-xs font-bold cursor-pointer transition-all segmented-label">Arabic</label>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Start Month</label>
-                            <select id="setup-cal-start" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
+                            <select id="setup-cal-start" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">End Month</label>
-                            <select id="setup-cal-end" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
+                            <select id="setup-cal-end" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"></select>
                         </div>
                     </div>
                 </div>
@@ -316,13 +306,13 @@
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
                 <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
                     Classes Setup
-                    <button onclick="adminAddClass()" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"><i class="fas fa-plus mr-1"></i>Add Class</button>
+                    <button onclick="adminAddClass()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-bold hover:bg-blue-200 shadow-sm"><i class="fas fa-plus mr-1"></i>Add Class</button>
                 </h3>
                 <div id="setup-classes-container" class="space-y-6"></div>
             </div>
 
-            <button onclick="saveGlobalSetup()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2 mb-10">
-                <i class="fas fa-save"></i> Save Global Configuration
+            <button onclick="saveGlobalSetup()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2 mb-10">
+                <i class="fas fa-save"></i> Save Global Config
             </button>
         </div>
 
@@ -333,20 +323,25 @@
                 <h2 class="text-xl font-bold text-[#0f172a]">Manage Students</h2>
             </div>
             
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 mt-4">
-                <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
-                <div class="flex gap-2">
-                    <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
-                    <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-slate-800">Add</button>
+            <div id="admin-students-content">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 mt-4">
+                    <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
+                        <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-slate-800 shadow-sm">Add</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                        <span>Roll / Name</span>
+                        <span>Action</span>
+                    </div>
+                    <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto"></div>
                 </div>
             </div>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
-                    <span>Roll / Name</span>
-                    <span>Action</span>
-                </div>
-                <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto"></div>
+            <div id="admin-students-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class from the top menu first.</p>
             </div>
         </div>
 
@@ -357,22 +352,27 @@
                 <h2 class="text-xl font-bold text-[#0f172a]">Timetable Editor</h2>
             </div>
 
-            <div class="mb-4 mt-4">
-                <select id="admin-timetable-day" onchange="renderAdminTimetableForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 font-medium">
-                    <option value="Sunday">Sunday</option>
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Saturday">Saturday</option>
-                </select>
-            </div>
+            <div id="admin-timetable-content">
+                <p class="text-xs text-slate-500 mb-4">Select a day below to set periods.</p>
+                
+                <div class="flex overflow-x-auto gap-2 pb-2 hide-scrollbar mb-4">
+                    <label class="shrink-0 cursor-pointer"><input type="radio" name="tt_day" value="Sunday" class="hidden chip-input-blue" checked onchange="renderAdminTimetableForm()"><span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium transition-all text-slate-600">Sunday</span></label>
+                    <label class="shrink-0 cursor-pointer"><input type="radio" name="tt_day" value="Monday" class="hidden chip-input-blue" onchange="renderAdminTimetableForm()"><span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium transition-all text-slate-600">Monday</span></label>
+                    <label class="shrink-0 cursor-pointer"><input type="radio" name="tt_day" value="Tuesday" class="hidden chip-input-blue" onchange="renderAdminTimetableForm()"><span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium transition-all text-slate-600">Tuesday</span></label>
+                    <label class="shrink-0 cursor-pointer"><input type="radio" name="tt_day" value="Wednesday" class="hidden chip-input-blue" onchange="renderAdminTimetableForm()"><span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium transition-all text-slate-600">Wednesday</span></label>
+                    <label class="shrink-0 cursor-pointer"><input type="radio" name="tt_day" value="Thursday" class="hidden chip-input-blue" onchange="renderAdminTimetableForm()"><span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium transition-all text-slate-600">Thursday</span></label>
+                    <label class="shrink-0 cursor-pointer"><input type="radio" name="tt_day" value="Saturday" class="hidden chip-input-blue" onchange="renderAdminTimetableForm()"><span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium transition-all text-slate-600">Saturday</span></label>
+                </div>
 
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <div id="admin-timetable-periods" class="space-y-4"></div>
-                <button onclick="saveAdminTimetable()" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 flex justify-center items-center gap-2">
-                    <i class="fas fa-save"></i> Save Timetable
-                </button>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div id="admin-timetable-periods" class="space-y-4"></div>
+                    <button onclick="saveAdminTimetable()" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 flex justify-center items-center gap-2 transition-colors">
+                        <i class="fas fa-save"></i> Save Timetable
+                    </button>
+                </div>
+            </div>
+            <div id="admin-timetable-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class from the top menu first.</p>
             </div>
         </div>
 
@@ -380,42 +380,51 @@
         <div id="view-admin-tasks" class="app-view hidden">
             <div class="flex items-center gap-2 mb-2">
                 <i class="fas fa-tasks text-xl text-slate-400"></i>
-                <h2 class="text-xl font-bold text-[#0f172a]">Task & Points Builder</h2>
+                <h2 class="text-xl font-bold text-[#0f172a]">Task Builder</h2>
             </div>
-            <p class="text-xs text-slate-500 mb-6">Create daily evaluation tasks for the selected class.</p>
+            <p class="text-xs text-slate-500 mb-6">Create daily evaluation tasks (e.g., Namaz, Reading).</p>
 
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
-                <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Task</h3>
-                <div class="space-y-3">
-                    <input type="text" id="new-task-title" placeholder="e.g. 5 Times Salah, Reading..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
-                    <div class="flex gap-2">
-                        <div class="flex-1">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Points</label>
-                            <input type="number" id="new-task-points" value="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none">
-                        </div>
-                        <div class="flex items-end">
-                            <button onclick="adminAddTask()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm h-[38px]">Create</button>
+            <div id="admin-tasks-content">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                    <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Task</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="new-task-title" placeholder="e.g. 5 Times Salah" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500">
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Points</label>
+                                <input type="number" id="new-task-points" value="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500">
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="adminAddTask()" class="bg-[#0f172a] text-white px-5 py-2 rounded-lg font-medium text-sm h-[38px] hover:bg-slate-800 shadow-sm">Create</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div id="admin-tasks-list" class="space-y-3"></div>
             </div>
-
-            <div id="admin-tasks-list" class="space-y-3"></div>
+            <div id="admin-tasks-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class from the top menu first.</p>
+            </div>
         </div>
 
         <!-- View: Admin - Advanced Syllabus -->
         <div id="view-admin-adv-syllabus" class="app-view hidden">
             <div class="flex items-center gap-2 mb-2">
                 <i class="fas fa-chart-line text-xl text-slate-400"></i>
-                <h2 class="text-xl font-bold text-[#0f172a]">Advanced Syllabus</h2>
+                <h2 class="text-xl font-bold text-[#0f172a]">Syllabus Setup</h2>
             </div>
             <p class="text-xs text-slate-500 mb-6">Set total units (Pages/Lessons) for each subject.</p>
 
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <div id="admin-adv-syllabus-list" class="space-y-4"></div>
-                <button onclick="saveAdminAdvSyllabus()" class="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg shadow-md hover:bg-slate-900 flex justify-center items-center gap-2">
-                    <i class="fas fa-save"></i> Save Syllabus Config
-                </button>
+            <div id="admin-syllabus-content">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div id="admin-adv-syllabus-list" class="space-y-4"></div>
+                    <button onclick="saveAdminAdvSyllabus()" class="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md hover:bg-slate-900 flex justify-center items-center gap-2 transition-colors">
+                        <i class="fas fa-save"></i> Save Syllabus Config
+                    </button>
+                </div>
+            </div>
+            <div id="admin-syllabus-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class from the top menu first.</p>
             </div>
         </div>
 
@@ -430,7 +439,7 @@
             <input type="text" id="leave-reason-input" placeholder="e.g. Fever, Traveling" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-sm outline-none focus:border-amber-500 mb-6">
             <div class="flex gap-3">
                 <button onclick="closeLeaveModal()" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onclick="confirmLeaveReason()" class="flex-1 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition-colors">Confirm</button>
+                <button onclick="confirmLeaveReason()" class="flex-1 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition-colors shadow-md">Confirm</button>
             </div>
         </div>
     </div>
@@ -446,8 +455,8 @@
                 <img id="cropper-image" src="" class="block max-w-full">
             </div>
             <div class="mt-4 flex gap-3">
-                <button onclick="closeCropper()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold">Cancel</button>
-                <button onclick="applyCrop()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Apply Crop</button>
+                <button onclick="closeCropper()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold transition-colors hover:bg-slate-200">Cancel</button>
+                <button onclick="applyCrop()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold transition-colors hover:bg-blue-700 shadow-md">Apply Crop</button>
             </div>
         </div>
     </div>
@@ -462,12 +471,13 @@
                 </div>
                 <h3 class="text-lg font-bold text-slate-800 mb-2" id="alert-title">Notification</h3>
                 <p class="text-sm text-slate-600 mb-6" id="alert-message">Message goes here.</p>
-                <button onclick="closeAlert()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900">OK</button>
+                <button onclick="closeAlert()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition-colors">OK</button>
             </div>
         </div>
     </div>
 
     <script type="module">
+        // --- STREAMING_CHUNK:Firebase Setup... ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -495,13 +505,13 @@
             showLoading(true);
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
+                    await signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
                 } else {
                     await signInAnonymously(auth);
                 }
             } catch (error) {
                 console.error("Auth Error:", error);
-                showAlert("Error", "Could not connect to database.", "error");
+                showAlert("Error", "Could not connect to database. Please check Firebase Rules.", "error");
                 showLoading(false);
             }
         }
@@ -517,28 +527,39 @@
         });
         initApp();
 
-        // --- Core UI Functions ---
+        // --- STREAMING_CHUNK:Implementing UI Controllers... ---
         window.toggleMenu = function() {
-            const menu = document.getElementById('side-menu');
-            const panel = document.getElementById('menu-panel');
-            if (menu.classList.contains('hidden')) {
-                menu.classList.remove('hidden');
-                setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+            const menu = document.getElementById('dropdown-menu');
+            const overlay = document.getElementById('menu-overlay');
+            if (menu.classList.contains('scale-0')) {
+                overlay.classList.remove('hidden');
+                menu.classList.remove('scale-0', 'opacity-0');
+                menu.classList.add('scale-100', 'opacity-100');
             } else {
-                panel.classList.add('translate-x-full');
-                setTimeout(() => menu.classList.add('hidden'), 300);
+                menu.classList.remove('scale-100', 'opacity-100');
+                menu.classList.add('scale-0', 'opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 200);
             }
         };
 
         window.navigate = function(viewId) {
-            toggleMenu(); // close menu
+            // Close dropdown if open
+            const menu = document.getElementById('dropdown-menu');
+            if(menu && !menu.classList.contains('scale-0')) toggleMenu();
+            
             document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
             document.getElementById(viewId).classList.remove('hidden');
             AppState.currentView = viewId;
             
             if(!AppState.currentClassId && viewId.startsWith('view-admin') && viewId !== 'view-admin-setup') {
-                showAlert("Setup Required", "Please configure classes first.", "warning");
+                document.getElementById(viewId.replace('view-', '') + '-content').classList.add('hidden');
+                document.getElementById(viewId.replace('view-', '') + '-empty').classList.remove('hidden');
                 return;
+            } else if (viewId.startsWith('view-admin') && viewId !== 'view-admin-setup') {
+                const cId = viewId.replace('view-', '') + '-content';
+                const eId = viewId.replace('view-', '') + '-empty';
+                if(document.getElementById(cId)) document.getElementById(cId).classList.remove('hidden');
+                if(document.getElementById(eId)) document.getElementById(eId).classList.add('hidden');
             }
 
             if(viewId === 'view-home') renderHomeView();
@@ -563,14 +584,17 @@
             
             if(isAdmin) {
                 dot.classList.add('translate-x-6');
-                bg.classList.replace('bg-slate-200', 'bg-blue-600');
-                icon.className = 'fas fa-shield-alt text-xs text-blue-600';
+                bg.classList.replace('bg-slate-200', 'bg-[#0f172a]');
+                icon.className = 'fas fa-shield-alt text-xs text-[#0f172a]';
             } else {
                 dot.classList.remove('translate-x-6');
-                bg.classList.replace('bg-blue-600', 'bg-slate-200');
+                bg.classList.replace('bg-[#0f172a]', 'bg-slate-200');
                 icon.className = 'fas fa-user text-xs text-slate-500';
             }
             updateUIForMode();
+            // close menu when switching modes
+            const menu = document.getElementById('dropdown-menu');
+            if(menu && !menu.classList.contains('scale-0')) toggleMenu();
         };
 
         function updateUIForMode() {
@@ -578,7 +602,6 @@
                 document.getElementById('menu-admin').classList.remove('hidden');
                 document.getElementById('menu-user').classList.add('hidden');
                 document.getElementById('class-selector-container').classList.remove('hidden'); 
-                document.getElementById('menu-title').innerText = "Admin Panel";
                 navigate('view-admin-setup');
             } else {
                 document.getElementById('menu-admin').classList.add('hidden');
@@ -590,32 +613,43 @@
                     document.getElementById('class-selector-container').classList.remove('hidden');
                     navigate('view-home');
                 }
-                document.getElementById('menu-title').innerText = "Menu";
             }
         }
 
         window.changeGlobalClass = async function(classId) {
             AppState.currentClassId = classId;
-            // Pre-load class specific heavy data
+            document.querySelectorAll('.class-chip-input').forEach(i => {
+                if(i.value === classId) i.checked = true;
+            });
             await loadClassDependencies();
             if(!document.getElementById(AppState.currentView).classList.contains('hidden')){
-                navigate(AppState.currentView); // Refresh view
+                const evt = AppState.currentView;
+                if(evt === 'view-admin-students') renderAdminStudents();
+                else if(evt === 'view-admin-timetable') renderAdminTimetableForm();
+                else if(evt === 'view-admin-tasks') renderAdminTasks();
+                else if(evt === 'view-admin-adv-syllabus') renderAdminAdvSyllabus();
+                else navigate(evt); 
             }
         };
 
         function setupGlobalClassSelector() {
-            const selector = document.getElementById('global-class-selector');
-            selector.innerHTML = '';
+            const container = document.getElementById('global-class-chips');
+            container.innerHTML = '';
             
             if (AppState.config && AppState.config.classes && AppState.config.classes.length > 0) {
+                if (!AppState.currentClassId || !AppState.config.classes.find(c=>c.id===AppState.currentClassId)) {
+                    AppState.currentClassId = AppState.config.classes[0].id;
+                }
+                
+                let html = '';
                 AppState.config.classes.forEach(cls => {
-                    const opt = document.createElement('option');
-                    opt.value = cls.id;
-                    opt.textContent = cls.name;
-                    selector.appendChild(opt);
+                    html += `
+                    <label class="shrink-0 cursor-pointer">
+                        <input type="radio" name="global_cls" value="${cls.id}" class="hidden chip-input class-chip-input" onchange="changeGlobalClass(this.value)" ${cls.id===AppState.currentClassId?'checked':''}>
+                        <span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-600 transition-all">${cls.name}</span>
+                    </label>`;
                 });
-                if (!AppState.currentClassId) AppState.currentClassId = AppState.config.classes[0].id;
-                selector.value = AppState.currentClassId;
+                container.innerHTML = html;
                 document.getElementById('class-selector-container').classList.remove('hidden');
                 loadClassDependencies();
             } else {
@@ -664,7 +698,7 @@
             
             if (type === 'success') { iconC.classList.add('bg-green-100', 'text-green-600'); icon.className = "fas fa-check text-3xl"; }
             else if (type === 'error') { iconC.classList.add('bg-red-100', 'text-red-600'); icon.className = "fas fa-times text-3xl"; }
-            else if (type === 'warning') { iconC.classList.add('bg-yellow-100', 'text-yellow-600'); icon.className = "fas fa-exclamation-triangle text-3xl"; }
+            else if (type === 'warning') { iconC.classList.add('bg-amber-100', 'text-amber-600'); icon.className = "fas fa-exclamation-triangle text-3xl"; }
             else { iconC.classList.add('bg-blue-100', 'text-blue-600'); icon.className = "fas fa-info text-3xl"; }
             
             const modal = document.getElementById('alert-modal');
@@ -684,15 +718,13 @@
 
         async function loadClassDependencies() {
             if(!AppState.currentClassId) return;
-            // Load Tasks
             const tSnap = await getDoc(getDocRef('config', `tasks_${AppState.currentClassId}`));
             AppState.tasks = tSnap.exists() ? tSnap.data().tasks : [];
-            // Load Adv Syllabus
             const sSnap = await getDoc(getDocRef('config', `syllabus_adv_${AppState.currentClassId}`));
             AppState.advSyllabus = sSnap.exists() ? sSnap.data() : {};
         }
 
-        // --- Cropper Functions ---
+        // --- STREAMING_CHUNK:Image Cropper Implementation... ---
         let cropper = null;
         window.handleLogoUpload = function(e) {
             const file = e.target.files[0];
@@ -704,7 +736,7 @@
                     if (cropper) cropper.destroy();
                     setTimeout(() => {
                         cropper = new Cropper(document.getElementById('cropper-image'), {
-                            aspectRatio: 1, viewMode: 2, autoCropArea: 0.9, guides: true
+                            aspectRatio: 1, viewMode: 2, autoCropArea: 0.9, guides: true, background: false
                         });
                     }, 50);
                 };
@@ -735,7 +767,7 @@
             document.getElementById('btn-remove-logo').classList.add('hidden');
         };
 
-        // --- ADMIN VIEWS ---
+        // --- STREAMING_CHUNK:Implementing Admin Functionalities... ---
         window.renderAdminSetup = function() {
             const c = AppState.config;
             document.getElementById('setup-inst-name').value = c.instName || '';
@@ -747,7 +779,12 @@
                 document.getElementById('setup-logo-icon').classList.add('hidden');
                 document.getElementById('btn-remove-logo').classList.remove('hidden');
             }
-            document.getElementById('setup-cal-type').value = c.calendarType || 'english';
+            
+            let calType = c.calendarType || 'english';
+            const calEng = document.getElementById('cal_eng');
+            const calArb = document.getElementById('cal_arb');
+            if(calType === 'english') calEng.checked = true; else calArb.checked = true;
+            
             window.updateSetupMonths();
             setTimeout(() => {
                 document.getElementById('setup-cal-start').value = c.startMonth || '';
@@ -757,7 +794,7 @@
         };
 
         window.updateSetupMonths = function() {
-            const t = document.getElementById('setup-cal-type').value;
+            const t = (document.querySelector('input[name="cal_type"]:checked') || {}).value || 'english';
             const start = document.getElementById('setup-cal-start');
             const end = document.getElementById('setup-cal-end');
             start.innerHTML = ''; end.innerHTML = '';
@@ -776,20 +813,20 @@
             const c = document.getElementById('setup-classes-container');
             if(AppState.config.classes.length === 0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No classes added.</p>'; return; }
             c.innerHTML = AppState.config.classes.map(cls => `
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
-                    <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-100 text-red-500 hover:bg-red-200 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative shadow-sm">
+                    <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-100 text-red-500 hover:bg-red-200 flex items-center justify-center transition-colors"><i class="fas fa-trash text-xs"></i></button>
                     <div class="mb-3 pr-10">
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Class Name</label>
-                        <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm font-bold">
+                        <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500">
                     </div>
                     <div class="grid grid-cols-3 gap-3">
                         <div class="col-span-1">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Periods/Day</label>
-                            <input type="number" min="1" value="${cls.periodsCount||4}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm text-center">
+                            <input type="number" min="1" value="${cls.periodsCount||4}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm text-center outline-none focus:border-blue-500">
                         </div>
                         <div class="col-span-2">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subjects (Comma separated)</label>
-                            <input type="text" value="${(cls.subjects||[]).join(', ')}" onchange="updateClassSubjects('${cls.id}', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm">
+                            <input type="text" value="${(cls.subjects||[]).join(', ')}" onchange="updateClassSubjects('${cls.id}', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm outline-none focus:border-blue-500" placeholder="e.g. Quran, Fiqh">
                         </div>
                     </div>
                 </div>
@@ -802,7 +839,7 @@
                 AppState.config.instName = document.getElementById('setup-inst-name').value;
                 AppState.config.instSubtitle = document.getElementById('setup-inst-sub').value;
                 AppState.config.instLogo = document.getElementById('setup-logo-base64').value;
-                AppState.config.calendarType = document.getElementById('setup-cal-type').value;
+                AppState.config.calendarType = (document.querySelector('input[name="cal_type"]:checked') || {}).value || 'english';
                 AppState.config.startMonth = document.getElementById('setup-cal-start').value;
                 AppState.config.endMonth = document.getElementById('setup-cal-end').value;
                 await setDoc(getDocRef('config', 'global'), AppState.config);
@@ -822,12 +859,12 @@
                 stds.sort((a,b) => a.rollNo - b.rollNo);
                 if(stds.length===0) list.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No students found.</div>';
                 else list.innerHTML = stds.map(s => `
-                    <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100">
+                    <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 font-bold text-slate-500 flex items-center justify-center text-xs">${s.rollNo}</div>
+                            <div class="w-8 h-8 rounded-full bg-slate-100 font-bold text-slate-500 flex items-center justify-center text-xs border border-slate-200">${s.rollNo}</div>
                             <div class="text-sm font-bold text-slate-700">${s.name}</div>
                         </div>
-                        <button onclick="deleteStudent('${s.id}')" class="text-red-400 p-2"><i class="fas fa-trash"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"><i class="fas fa-trash"></i></button>
                     </div>`).join('');
             } catch(e) { list.innerHTML = '<p class="text-red-500 p-4 text-center">Error.</p>'; }
             showLoading(false);
@@ -854,41 +891,43 @@
 
         window.renderAdminTimetableForm = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
-            const day = document.getElementById('admin-timetable-day').value;
-            const c = document.getElementById('admin-timetable-periods'); c.innerHTML = 'Loading...';
+            const dayRadio = document.querySelector('input[name="tt_day"]:checked');
+            const day = dayRadio ? dayRadio.value : 'Sunday';
+            
+            const c = document.getElementById('admin-timetable-periods'); c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-slate-400"></i></div>';
             try {
                 const snap = await getDoc(getDocRef('config', 'timetable_'+cls.id));
                 let tData = snap.exists() ? snap.data()[day] || [] : [];
-                let subOpts = `<option value="">-- Free --</option>` + (cls.subjects||[]).map(s=>`<option value="${s}">${s}</option>`).join('');
+                let subOpts = `<option value="">-- Free / Break --</option>` + (cls.subjects||[]).map(s=>`<option value="${s}">${s}</option>`).join('');
                 let html = '';
                 for(let i=0; i<(cls.periodsCount||4); i++) {
                     let d = tData[i] || {start:'', end:'', subject:''};
                     html += `
-                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                            <div class="text-xs font-bold text-blue-600 mb-2">Period ${i+1}</div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 shadow-sm">
+                            <div class="text-xs font-bold text-blue-600 mb-2 uppercase">Period ${i+1}</div>
                             <div class="grid grid-cols-2 gap-3 mb-2">
-                                <input type="time" id="tt_start_${i}" value="${d.start}" class="bg-white border border-slate-200 rounded px-2 py-1 text-sm">
-                                <input type="time" id="tt_end_${i}" value="${d.end}" class="bg-white border border-slate-200 rounded px-2 py-1 text-sm">
+                                <div><label class="block text-[9px] font-bold text-slate-400 uppercase">Start Time</label><input type="time" id="tt_start_${i}" value="${d.start}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500"></div>
+                                <div><label class="block text-[9px] font-bold text-slate-400 uppercase">End Time</label><input type="time" id="tt_end_${i}" value="${d.end}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500"></div>
                             </div>
-                            <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm">${subOpts}</select>
+                            <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm font-medium outline-none focus:border-blue-500">${subOpts}</select>
                         </div>`;
                 }
                 c.innerHTML = html;
                 for(let i=0; i<(cls.periodsCount||4); i++) {
                     let d = tData[i]; if(d && d.subject) document.getElementById(`tt_sub_${i}`).value = d.subject;
                 }
-            } catch(e) { c.innerHTML = 'Error'; }
+            } catch(e) { c.innerHTML = 'Error'; console.error(e); }
         };
         window.saveAdminTimetable = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
-            const day = document.getElementById('admin-timetable-day').value;
+            const day = (document.querySelector('input[name="tt_day"]:checked') || {}).value || 'Sunday';
             let arr = [];
             for(let i=0; i<(cls.periodsCount||4); i++) {
                 arr.push({ start: document.getElementById(`tt_start_${i}`).value, end: document.getElementById(`tt_end_${i}`).value, subject: document.getElementById(`tt_sub_${i}`).value });
             }
             showLoading(true);
-            try { await setDoc(getDocRef('config', 'timetable_'+cls.id), { [day]: arr }, { merge: true }); showAlert("Saved", "Timetable updated.", "success"); } 
-            catch(e) { showAlert("Error", "Failed", "error"); }
+            try { await setDoc(getDocRef('config', 'timetable_'+cls.id), { [day]: arr }, { merge: true }); showAlert("Saved", `Timetable for ${day} updated.`, "success"); } 
+            catch(e) { showAlert("Error", "Failed", "error"); console.error(e); }
             showLoading(false);
         };
 
@@ -897,8 +936,8 @@
             if(AppState.tasks.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No tasks defined.</p>'; return; }
             c.innerHTML = AppState.tasks.map(t => `
                 <div class="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                    <div><div class="font-bold text-slate-800 text-sm">${t.title}</div><div class="text-[10px] font-bold text-amber-500 uppercase mt-1">${t.points} Points</div></div>
-                    <button onclick="adminRemoveTask('${t.id}')" class="text-red-400 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center"><i class="fas fa-trash text-xs"></i></button>
+                    <div><div class="font-bold text-slate-800 text-sm">${t.title}</div><div class="text-[10px] font-bold text-amber-500 uppercase mt-1 bg-amber-50 inline-block px-2 py-0.5 rounded">${t.points} Points</div></div>
+                    <button onclick="adminRemoveTask('${t.id}')" class="text-red-400 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 transition-colors"><i class="fas fa-trash text-xs"></i></button>
                 </div>
             `).join('');
         };
@@ -926,21 +965,21 @@
         window.renderAdminAdvSyllabus = function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const c = document.getElementById('admin-adv-syllabus-list');
-            if(!cls.subjects || cls.subjects.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No subjects defined in Global Setup.</p>'; return; }
+            if(!cls.subjects || cls.subjects.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No subjects defined.</p>'; return; }
             let html = '';
             cls.subjects.forEach((s, idx) => {
                 let d = AppState.advSyllabus[s] || { total: '', type: 'Pages' };
                 html += `
-                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
                         <div class="font-bold text-slate-800 text-sm mb-3">${s}</div>
                         <div class="flex gap-3">
                             <div class="flex-1">
-                                <label class="block text-[10px] text-slate-500 uppercase mb-1">Total Units</label>
-                                <input type="number" id="adv_syl_tot_${idx}" value="${d.total}" placeholder="e.g. 100" class="w-full text-sm bg-white border border-slate-200 rounded px-2 py-2 outline-none">
+                                <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Total Units</label>
+                                <input type="number" id="adv_syl_tot_${idx}" value="${d.total}" placeholder="e.g. 100" class="w-full text-sm bg-white border border-slate-200 rounded px-2 py-2 outline-none focus:border-slate-500">
                             </div>
                             <div class="flex-1">
-                                <label class="block text-[10px] text-slate-500 uppercase mb-1">Unit Type</label>
-                                <select id="adv_syl_type_${idx}" class="w-full text-sm bg-white border border-slate-200 rounded px-2 py-2 outline-none">
+                                <label class="block text-[10px] text-slate-500 uppercase mb-1 font-bold">Unit Type</label>
+                                <select id="adv_syl_type_${idx}" class="w-full text-sm bg-white border border-slate-200 rounded px-2 py-2 outline-none focus:border-slate-500 font-medium">
                                     <option value="Pages" ${d.type==='Pages'?'selected':''}>Pages</option>
                                     <option value="Lessons" ${d.type==='Lessons'?'selected':''}>Lessons</option>
                                     <option value="Chapters" ${d.type==='Chapters'?'selected':''}>Chapters</option>
@@ -966,6 +1005,7 @@
             showLoading(false);
         };
 
+        // --- STREAMING_CHUNK:Implementing User Dashboard & Attendance... ---
         window.renderHomeView = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             const date = new Date();
@@ -974,7 +1014,8 @@
             document.getElementById('home-class-badge').innerText = cls.name;
             const c = document.getElementById('home-timetable-container');
             const emp = document.getElementById('home-empty-state');
-            c.innerHTML = 'Loading...'; emp.classList.add('hidden');
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>'; 
+            emp.classList.add('hidden');
             try {
                 const snap = await getDoc(getDocRef('config', 'timetable_'+cls.id));
                 let tData = snap.exists() ? snap.data()[DAYS_OF_WEEK[date.getDay()]] || [] : [];
@@ -982,19 +1023,20 @@
                 if(tData.length===0) { c.innerHTML=''; emp.classList.remove('hidden'); }
                 else {
                     c.innerHTML = tData.map((p,i) => {
-                        const cols = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200'];
+                        const cols = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200', 'bg-purple-50 text-purple-800 border-purple-200'];
+                        const cl = cols[p.subject.length % cols.length];
                         return `
-                        <div class="${cols[i%cols.length]} border rounded-2xl p-5 shadow-sm relative overflow-hidden">
+                        <div class="${cl} border rounded-2xl p-5 shadow-sm relative overflow-hidden transform transition hover:-translate-y-1">
                             <div class="absolute top-0 right-0 w-16 h-16 bg-white opacity-20 rounded-bl-full -mr-4 -mt-4"></div>
                             <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs font-bold uppercase opacity-70">Period ${i+1}</span>
-                                <span class="text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full"><i class="far fa-clock mr-1"></i>${p.start}-${p.end}</span>
+                                <span class="text-xs font-bold uppercase opacity-70 tracking-wider">Period ${i+1}</span>
+                                <span class="text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full"><i class="far fa-clock mr-1"></i>${p.start||'--'}-${p.end||'--'}</span>
                             </div>
-                            <h3 class="text-2xl font-black mt-2">${p.subject}</h3>
+                            <h3 class="text-2xl font-black mt-2 tracking-tight">${p.subject}</h3>
                         </div>`;
                     }).join('');
                 }
-            } catch(e) { c.innerHTML = 'Error'; }
+            } catch(e) { c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading timetable.</p>'; console.error(e); }
         };
 
         // --- Smart Attendance ---
@@ -1006,7 +1048,7 @@
         window.loadAttendance = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
             attDate = document.getElementById('attendance-date').value;
-            const c = document.getElementById('attendance-students-list'); c.innerHTML = '<p class="text-center">Loading...</p>';
+            const c = document.getElementById('attendance-students-list'); c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-emerald-500"></i></div>';
             try {
                 const q = await getDocs(getPublicRef('students'));
                 let stds = []; q.forEach(d => { let x=d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
@@ -1015,44 +1057,46 @@
                 const aSnap = await getDoc(getDocRef('attendance', `${cls.id}_${attDate}`));
                 attData = aSnap.exists() ? aSnap.data().records : {};
 
-                if(stds.length===0) c.innerHTML = 'No students.';
+                if(stds.length===0) c.innerHTML = '<div class="text-center text-sm text-slate-400">No students found. Add from Admin mode.</div>';
                 else {
                     c.innerHTML = stds.map(s => {
                         let stat = attData[s.id] ? attData[s.id].status : 'present';
                         let reason = attData[s.id] ? attData[s.id].reason : '';
                         return `
-                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2 transition-colors hover:border-emerald-200" id="att_card_${s.id}">
                             <div class="flex items-center gap-3 overflow-hidden flex-1">
-                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold shrink-0">${s.rollNo}</div>
+                                <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">${s.rollNo}</div>
                                 <div class="truncate">
                                     <div class="text-sm font-bold text-slate-800 truncate">${s.name}</div>
                                     <div class="text-[9px] text-amber-500 font-bold truncate" id="reason_${s.id}">${reason ? 'Leave: '+reason : ''}</div>
                                 </div>
                             </div>
-                            <div class="flex bg-slate-100 rounded-lg p-1 gap-1 shrink-0">
+                            <div class="flex bg-slate-100 rounded-lg p-1 gap-1 shrink-0 shadow-inner">
                                 <input type="radio" name="att_${s.id}" id="att_p_${s.id}" value="present" class="hidden att-radio" ${stat==='present'?'checked':''} onchange="updateAttStatus('${s.id}', 'present')">
-                                <label for="att_p_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='present'?'bg-emerald-500 text-white shadow':'text-slate-400 hover:bg-slate-200'}">P</label>
+                                <label for="att_p_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='present'?'bg-emerald-500 text-white shadow-md':'text-slate-400 hover:bg-slate-200'}">P</label>
                                 
                                 <input type="radio" name="att_${s.id}" id="att_a_${s.id}" value="absent" class="hidden att-radio" ${stat==='absent'?'checked':''} onchange="updateAttStatus('${s.id}', 'absent')">
-                                <label for="att_a_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='absent'?'bg-red-500 text-white shadow':'text-slate-400 hover:bg-slate-200'}">A</label>
+                                <label for="att_a_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='absent'?'bg-red-500 text-white shadow-md':'text-slate-400 hover:bg-slate-200'}">A</label>
                                 
                                 <input type="radio" name="att_${s.id}" id="att_l_${s.id}" value="leave" class="hidden att-radio" ${stat==='leave'?'checked':''} onchange="updateAttStatus('${s.id}', 'leave')">
-                                <label for="att_l_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='leave'?'bg-amber-500 text-white shadow':'text-slate-400 hover:bg-slate-200'}">L</label>
+                                <label for="att_l_${s.id}" class="w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat==='leave'?'bg-amber-500 text-white shadow-md':'text-slate-400 hover:bg-slate-200'}">L</label>
                             </div>
                         </div>`;
                     }).join('');
                 }
-            } catch(e) { c.innerHTML = 'Error'; }
+            } catch(e) { 
+                console.error("Attendance Load Error:", e);
+                c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading attendance. Check Firebase rules.</p>'; 
+            }
         };
         window.updateAttStatus = function(sid, stat) {
             if(!attData[sid]) attData[sid] = { status: stat, reason: '' };
             else attData[sid].status = stat;
             
-            // Visual update
             ['p','a','l'].forEach(v => {
                 const lbl = document.querySelector(`label[for="att_${v}_${sid}"]`);
                 if(lbl) {
-                    lbl.className = `w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat===v ? (v==='p'?'bg-emerald-500':v==='a'?'bg-red-500':'bg-amber-500')+' text-white shadow' : 'text-slate-400 hover:bg-slate-200'}`;
+                    lbl.className = `w-8 h-8 flex items-center justify-center rounded-md font-bold text-xs cursor-pointer transition-all ${stat===v ? (v==='p'?'bg-emerald-500':v==='a'?'bg-red-500':'bg-amber-500')+' text-white shadow-md' : 'text-slate-400 hover:bg-slate-200'}`;
                 }
             });
 
@@ -1084,51 +1128,74 @@
             try {
                 await setDoc(getDocRef('attendance', `${cls.id}_${attDate}`), { classId: cls.id, date: attDate, records: attData });
                 showAlert("Saved", "Attendance saved successfully.", "success");
-            } catch(e) { showAlert("Error", "Failed to save.", "error"); }
+            } catch(e) { console.error(e); showAlert("Error", "Failed to save.", "error"); }
             showLoading(false);
         };
 
+        // --- STREAMING_CHUNK:Implementing Tasks, Tracker & Syllabus... ---
         // --- Task Evaluator ---
         let evalData = {};
         window.initTaskEvalView = function() {
-            const sel = document.getElementById('eval-task-select');
-            sel.innerHTML = '<option value="">-- Choose Task --</option>';
-            AppState.tasks.forEach(t => sel.add(new Option(`${t.title} (${t.points} pts)`, t.id)));
+            const c = document.getElementById('eval-task-container');
+            let html = '<div class="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">';
+            if(AppState.tasks.length === 0) {
+                html += '<span class="text-sm text-slate-400 italic px-2">No tasks defined by Admin.</span>';
+            } else {
+                AppState.tasks.forEach((t, i) => {
+                    html += `
+                    <label class="shrink-0 cursor-pointer">
+                        <input type="radio" name="eval_task" value="${t.id}" class="hidden chip-input-amber" onchange="loadTaskEvaluations()" ${i===0?'checked':''}>
+                        <span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition-all shadow-sm">${t.title} <span class="opacity-70 text-[10px]">(${t.points}p)</span></span>
+                    </label>`;
+                });
+            }
+            html += '</div>';
+            c.innerHTML = html;
             document.getElementById('eval-students-list').innerHTML = '';
+            if(AppState.tasks.length > 0) loadTaskEvaluations();
         };
         window.loadTaskEvaluations = async function() {
-            const cls = getCurrentClassConfig(); const tId = document.getElementById('eval-task-select').value;
+            const cls = getCurrentClassConfig(); 
+            const tId = (document.querySelector('input[name="eval_task"]:checked') || {}).value;
             const c = document.getElementById('eval-students-list');
             if(!tId || !cls) { c.innerHTML = ''; return; }
-            c.innerHTML = 'Loading...';
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-amber-500"></i></div>';
             try {
                 const dateStr = new Date().toISOString().split('T')[0];
                 const q = await getDocs(getPublicRef('students'));
                 let stds = []; q.forEach(d => { let x=d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
                 stds.sort((a,b)=>a.rollNo-b.rollNo);
                 
+                if(stds.length === 0) {
+                    c.innerHTML = '<div class="text-center text-sm text-slate-400">No students found. Add from Admin mode.</div>';
+                    return;
+                }
+
                 const snap = await getDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`));
                 evalData = snap.exists() ? snap.data().records : {};
 
                 c.innerHTML = stds.map(s => {
                     let val = evalData[s.id] && evalData[s.id][tId] === true;
                     return `
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300':''}" onclick="toggleEval('${s.id}', '${tId}')" id="eval_card_${s.id}">
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300 shadow-inner':''}" onclick="toggleEval('${s.id}', '${tId}')" id="eval_card_${s.id}">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500 shadow-sm border border-slate-200">${s.rollNo}</div>
                             <div class="font-bold text-slate-700 text-sm">${s.name}</div>
                         </div>
-                        <div id="eval_icon_${s.id}">${val ? '<i class="fas fa-check-circle text-amber-500 text-2xl"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>'}</div>
+                        <div id="eval_icon_${s.id}">${val ? '<i class="fas fa-check-circle text-amber-500 text-2xl drop-shadow"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>'}</div>
                     </div>`;
                 }).join('');
-            } catch(e) { c.innerHTML = 'Error'; }
+            } catch(e) { 
+                console.error("Task Load Error:", e);
+                c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading tasks. Check Firebase rules.</p>'; 
+            }
         };
         window.toggleEval = function(sId, tId) {
             if(!evalData[sId]) evalData[sId] = {};
             evalData[sId][tId] = !evalData[sId][tId];
             let val = evalData[sId][tId];
-            document.getElementById(`eval_card_${sId}`).className = `bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300':''}`;
-            document.getElementById(`eval_icon_${sId}`).innerHTML = val ? '<i class="fas fa-check-circle text-amber-500 text-2xl"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>';
+            document.getElementById(`eval_card_${sId}`).className = `bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300 shadow-inner':''}`;
+            document.getElementById(`eval_icon_${sId}`).innerHTML = val ? '<i class="fas fa-check-circle text-amber-500 text-2xl drop-shadow"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>';
         };
         window.saveTaskEvaluations = async function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
@@ -1137,76 +1204,110 @@
             try {
                 await setDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`), { classId: cls.id, date: dateStr, records: evalData }, { merge: true });
                 showAlert("Saved", "Evaluations submitted.", "success");
-            } catch(e) { showAlert("Error", "Failed", "error"); }
+            } catch(e) { console.error(e); showAlert("Error", "Failed", "error"); }
             showLoading(false);
         };
 
-        // --- Daily Tracker (Existing QA Logic adapted) ---
+        // --- Daily Tracker ---
         let trData = {};
         window.initTrackerView = function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
-            const s = document.getElementById('tracker-subject-select');
-            s.innerHTML = '<option value="">-- Choose Subject --</option>';
-            (cls.subjects||[]).forEach(x => s.add(new Option(x,x)));
+            const c = document.getElementById('tracker-subject-container');
+            let html = '<div class="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">';
+            if(!cls.subjects || cls.subjects.length === 0) {
+                html += '<span class="text-sm text-slate-400 italic px-2">No subjects defined.</span>';
+            } else {
+                cls.subjects.forEach((x, i) => {
+                    html += `
+                    <label class="shrink-0 cursor-pointer">
+                        <input type="radio" name="tracker_sub" value="${x}" class="hidden chip-input-indigo" onchange="loadTrackerStudents()" ${i===0?'checked':''}>
+                        <span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition-all shadow-sm">${x}</span>
+                    </label>`;
+                });
+            }
+            html += '</div>';
+            c.innerHTML = html;
             document.getElementById('tracker-students-list').innerHTML = '';
+            if(cls.subjects && cls.subjects.length > 0) loadTrackerStudents();
         };
         window.loadTrackerStudents = async function() {
-            const cls = getCurrentClassConfig(); const sub = document.getElementById('tracker-subject-select').value;
+            const cls = getCurrentClassConfig(); 
+            const sub = (document.querySelector('input[name="tracker_sub"]:checked') || {}).value;
             const c = document.getElementById('tracker-students-list');
             if(!sub || !cls) { c.innerHTML = ''; return; }
-            c.innerHTML = 'Loading...';
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div>';
             try {
                 const qs = await getDocs(getPublicRef('students'));
                 let stds = []; qs.forEach(d => { let x=d.data(); if(x.classId===cls.id) stds.push({...x, id:d.id}); });
                 stds.sort((a,b)=>a.rollNo-b.rollNo);
                 
+                if(stds.length === 0) {
+                    c.innerHTML = '<div class="text-center text-sm text-slate-400">No students found. Add from Admin mode.</div>';
+                    return;
+                }
+
                 const ds = new Date().toISOString().split('T')[0];
                 const snap = await getDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`));
                 trData = snap.exists() ? snap.data().students : {};
                 
                 c.innerHTML = stds.map(s => {
                     let stat = trData[s.id] || 'pending';
-                    let bg = stat==='asked'?'bg-indigo-50 border-indigo-300':stat==='absent'?'bg-red-50 border-red-200 opacity-75':'bg-white border-slate-200';
-                    let ic = stat==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl"></i>':stat==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+                    let bg = stat==='asked'?'bg-indigo-50 border-indigo-300 shadow-inner':stat==='absent'?'bg-red-50 border-red-200 opacity-75 shadow-inner':'bg-white border-slate-200';
+                    let ic = stat==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl drop-shadow"></i>':stat==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl drop-shadow"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
                     return `
-                    <div onclick="cycleTrStat('${s.id}')" id="tr_c_${s.id}" class="flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all ${bg}">
+                    <div onclick="cycleTrStat('${s.id}')" id="tr_c_${s.id}" class="flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all ${bg} active:scale-95 shadow-sm">
                         <div class="flex gap-4 items-center">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">${s.rollNo}</div>
-                            <div class="font-bold text-sm">${s.name}</div>
+                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 shadow-sm">${s.rollNo}</div>
+                            <div class="font-bold text-sm text-slate-700">${s.name}</div>
                         </div>
                         <div id="tr_i_${s.id}">${ic}</div>
                     </div>`;
                 }).join('');
-            } catch(e) { c.innerHTML='Error'; }
+            } catch(e) { c.innerHTML='<p class="text-red-500 text-sm text-center">Error loading tracker.</p>'; console.error(e); }
         };
         window.cycleTrStat = function(sid) {
             let cur = trData[sid] || 'pending', nxt = cur==='asked'?'absent':cur==='absent'?'pending':'asked';
             trData[sid] = nxt;
-            document.getElementById(`tr_c_${sid}`).className = "flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all " + (nxt==='asked'?'bg-indigo-50 border-indigo-300':nxt==='absent'?'bg-red-50 border-red-200 opacity-75':'bg-white border-slate-200');
-            document.getElementById(`tr_i_${sid}`).innerHTML = nxt==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl"></i>':nxt==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+            document.getElementById(`tr_c_${sid}`).className = "flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all active:scale-95 shadow-sm " + (nxt==='asked'?'bg-indigo-50 border-indigo-300 shadow-inner':nxt==='absent'?'bg-red-50 border-red-200 opacity-75 shadow-inner':'bg-white border-slate-200');
+            document.getElementById(`tr_i_${sid}`).innerHTML = nxt==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl drop-shadow"></i>':nxt==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl drop-shadow"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
         };
         window.saveDailyTracking = async function() {
-            const cls = getCurrentClassConfig(); const sub = document.getElementById('tracker-subject-select').value;
+            const cls = getCurrentClassConfig(); 
+            const sub = (document.querySelector('input[name="tracker_sub"]:checked') || {}).value;
             if(!cls || !sub) return;
             const ds = new Date().toISOString().split('T')[0];
             showLoading(true);
             try {
                 await setDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`), { date: ds, subject: sub, classId: cls.id, students: trData, updatedAt: ds });
                 showAlert("Saved", "Daily tracking saved.", "success");
-            } catch(e) {} showLoading(false);
+            } catch(e) { console.error(e); showAlert("Error", "Failed", "error");} showLoading(false);
         };
 
         // --- Advanced Syllabus (User) ---
         window.initUserSyllabusView = function() {
             const cls = getCurrentClassConfig(); if(!cls) return;
-            const s = document.getElementById('user-syllabus-subject');
-            s.innerHTML = '<option value="">-- Choose Subject --</option>';
-            (cls.subjects||[]).forEach(x => s.add(new Option(x,x)));
+            const c = document.getElementById('user-syllabus-subject-container');
+            let html = '<div class="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">';
+            if(!cls.subjects || cls.subjects.length === 0) {
+                html += '<span class="text-sm text-slate-400 italic px-2">No subjects defined.</span>';
+            } else {
+                cls.subjects.forEach((x, i) => {
+                    html += `
+                    <label class="shrink-0 cursor-pointer">
+                        <input type="radio" name="usyl_sub" value="${x}" class="hidden chip-input-purple" onchange="loadUserSyllabus()" ${i===0?'checked':''}>
+                        <span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition-all shadow-sm">${x}</span>
+                    </label>`;
+                });
+            }
+            html += '</div>';
+            c.innerHTML = html;
             document.getElementById('user-syllabus-card').classList.add('hidden');
+            if(cls.subjects && cls.subjects.length > 0) loadUserSyllabus();
         };
         let curUsylSubj = '';
         window.loadUserSyllabus = async function() {
-            const cls = getCurrentClassConfig(); curUsylSubj = document.getElementById('user-syllabus-subject').value;
+            const cls = getCurrentClassConfig(); 
+            curUsylSubj = (document.querySelector('input[name="usyl_sub"]:checked') || {}).value;
             const card = document.getElementById('user-syllabus-card');
             if(!curUsylSubj || !cls) { card.classList.add('hidden'); return; }
             showLoading(true);
@@ -1216,12 +1317,12 @@
                 let comp = snap.exists() ? parseInt(snap.data().completed)||0 : 0;
                 
                 document.getElementById('usyl-title').innerText = curUsylSubj;
-                document.getElementById('usyl-type').innerText = conf.type;
+                document.getElementById('usyl-type').innerText = conf.type || 'Units';
                 document.getElementById('usyl-total').innerText = conf.total || 0;
                 document.getElementById('usyl-input').value = comp;
                 updateUsylBar(comp, parseInt(conf.total)||0);
                 card.classList.remove('hidden');
-            } catch(e) {} showLoading(false);
+            } catch(e) { console.error(e); } showLoading(false);
         };
         window.updateUsylCount = function(delta) {
             let inp = document.getElementById('usyl-input');
@@ -1241,7 +1342,7 @@
             try {
                 await setDoc(getDocRef('syllabus_tracking', `${cls.id}_${curUsylSubj.replace(/\s+/g,'_')}`), { classId: cls.id, subject: curUsylSubj, completed: comp, updated: new Date().toISOString() });
                 showAlert("Success", "Progress updated.", "success");
-            } catch(e) {} showLoading(false);
+            } catch(e) { console.error(e); } showLoading(false);
         };
 
     </script>
