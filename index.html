@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Noorun Ala Noor - Madrasa Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Cropper.js for Image Cropping -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        .glass-header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased overflow-x-hidden">
+
+    <!-- Global App State -->
+    <script>
+        const AppState = {
+            mode: 'user', // 'user' or 'admin'
+            currentView: 'view-home',
+            currentClassId: null,
+            config: { classes: [] }
+        };
+    </script>
+
+    <!-- Header Section -->
+    <header class="glass-header fixed top-0 w-full z-40 border-b border-slate-200 shadow-sm">
+        <div class="px-4 py-3 flex justify-between items-center max-w-md mx-auto">
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative">
+                    <span id="app-logo-fallback">നൂർ</span>
+                    <img id="app-header-logo" src="" class="w-full h-full object-cover hidden absolute inset-0">
+                </div>
+                <div>
+                    <h1 id="app-header-title" class="font-bold text-sm text-[#0f172a] leading-tight tracking-wide">NOORUN ALA NOOR</h1>
+                    <p id="app-header-subtitle" class="text-[10px] text-slate-500 font-medium uppercase">MADRASA TRACKER</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Mode Switcher -->
+                <div class="flex items-center justify-center">
+                    <label for="mode-toggle" class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="mode-toggle" class="sr-only" onchange="toggleAppMode(this.checked)">
+                            <div class="block bg-slate-200 w-14 h-8 rounded-full transition-colors" id="toggle-bg"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform flex items-center justify-center shadow" id="toggle-dot">
+                                <i class="fas fa-user text-xs text-slate-500" id="toggle-icon"></i>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Menu Button -->
+                <button onclick="toggleMenu()" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 bg-slate-100 rounded-md">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Global Class Selector (Sticky below header) -->
+    <div id="class-selector-container" class="fixed top-[65px] w-full z-30 bg-white/90 backdrop-blur-sm border-b border-slate-200 shadow-sm hidden">
+        <div class="max-w-md mx-auto px-4 py-2 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase">Selected Class:</span>
+            <select id="global-class-selector" onchange="changeGlobalClass(this.value)" class="bg-slate-100 border-none text-sm font-bold text-[#0f172a] rounded-md px-3 py-1 focus:ring-0 cursor-pointer">
+                <!-- Options populated dynamically -->
+            </select>
+        </div>
+    </div>
+
+    <!-- Dropdown Menu (Sidebar style) -->
+    <div id="side-menu" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="toggleMenu()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-64 bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="menu-panel">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-[#f8fafc]">
+                <h2 class="font-bold text-slate-800" id="menu-title">Menu</h2>
+                <button onclick="toggleMenu()" class="p-2 text-slate-500 hover:text-slate-800"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- User Menu Links -->
+            <nav id="menu-user" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <a href="#" onclick="navigate('view-home'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-blue-50 rounded-lg font-medium transition-colors"><i class="fas fa-home w-5 text-blue-500"></i> Today's Classes</a>
+                <a href="#" onclick="navigate('view-tracker'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-green-50 rounded-lg font-medium transition-colors"><i class="fas fa-clipboard-check w-5 text-green-500"></i> Daily Tracker</a>
+                <a href="#" onclick="navigate('view-syllabus'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-purple-50 rounded-lg font-medium transition-colors"><i class="fas fa-book-open w-5 text-purple-500"></i> Syllabus Progress</a>
+            </nav>
+
+            <!-- Admin Menu Links -->
+            <nav id="menu-admin" class="flex-1 overflow-y-auto p-4 space-y-2 hidden">
+                <div class="text-xs font-bold text-slate-400 uppercase mb-2 px-3">Administration</div>
+                <a href="#" onclick="navigate('view-admin-setup'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-cogs w-5 text-slate-600"></i> Global App Setup</a>
+                <a href="#" onclick="navigate('view-admin-students'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-users w-5 text-slate-600"></i> Manage Students</a>
+                <a href="#" onclick="navigate('view-admin-timetable'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-calendar-alt w-5 text-slate-600"></i> Timetable Editor</a>
+                <a href="#" onclick="navigate('view-admin-syllabus'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-tasks w-5 text-slate-600"></i> Syllabus Targets</a>
+            </nav>
+            
+            <div class="p-4 border-t border-slate-100 text-center text-xs text-slate-400">
+                v2.0 - Authored by AI
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="max-w-md mx-auto pt-32 pb-20 px-4 min-h-screen relative" id="main-container">
+        
+        <!-- Loading State -->
+        <div id="loading-overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#f8fafc]">
+            <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
+            <p class="text-slate-500 text-sm font-medium animate-pulse">Connecting to server...</p>
+        </div>
+
+        <!-- ==================== USER VIEWS ==================== -->
+        
+        <!-- View: Home (Today's Timetable) -->
+        <div id="view-home" class="app-view hidden">
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-[#0f172a]" id="home-day-title">Today</h2>
+                    <p class="text-sm text-slate-500" id="home-date-subtitle">Loading...</p>
+                </div>
+                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold" id="home-class-badge">Class --</div>
+            </div>
+            
+            <div id="home-timetable-container" class="space-y-4">
+                <!-- Timetable cards injected here -->
+            </div>
+            
+            <div id="home-empty-state" class="hidden text-center py-10 bg-white rounded-2xl shadow-sm border border-slate-100 mt-4">
+                <i class="fas fa-mug-hot text-4xl text-slate-300 mb-3"></i>
+                <h3 class="font-bold text-slate-700">No Classes Today</h3>
+                <p class="text-sm text-slate-500">Enjoy your day off!</p>
+            </div>
+        </div>
+
+        <!-- View: Tracker (Daily Assessment) -->
+        <div id="view-tracker" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Daily Tracker</h2>
+            <p class="text-sm text-slate-500 mb-6">Select a subject to mark student assessment.</p>
+
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Subject</label>
+                <select id="tracker-subject-select" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
+                    <option value="">-- Choose Subject --</option>
+                </select>
+            </div>
+
+            <div id="tracker-students-list" class="space-y-3 mt-6">
+                <!-- Student list injected here -->
+            </div>
+            <div class="mt-8">
+                <button onclick="saveDailyTracking()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Tracking Data
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Syllabus Progress -->
+        <div id="view-syllabus" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Syllabus Progress</h2>
+            <p class="text-sm text-slate-500 mb-6">Track completion of lessons across subjects.</p>
+
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month</label>
+                <select id="progress-month-select" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
+                    <!-- Populated dynamically based on calendar type -->
+                </select>
+            </div>
+
+            <div id="progress-subjects-list" class="space-y-4 mt-6">
+                <!-- Progress cards injected here -->
+            </div>
+            <div class="mt-8">
+                <button onclick="saveSyllabusProgress()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-check-circle"></i> Update Progress
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== ADMIN VIEWS ==================== -->
+
+        <!-- View: Admin - Global Setup -->
+        <div id="view-admin-setup" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-6">
+                <i class="fas fa-cogs text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Global App Setup</h2>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl text-sm mb-6 flex gap-3 shadow-sm">
+                <i class="fas fa-exclamation-triangle mt-1"></i>
+                <div>Changes made here will affect the entire application structure. Please configure carefully.</div>
+            </div>
+
+            <!-- Institution Details -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Institution Details</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Institution Name</label>
+                        <input type="text" id="setup-inst-name" placeholder="e.g. Noorun Ala Noor" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Subtitle / Location</label>
+                        <input type="text" id="setup-inst-sub" placeholder="e.g. Madrasa Tracker" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Logo (Square, Max 200KB)</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative">
+                                <img id="setup-logo-preview" src="" class="w-full h-full object-cover hidden">
+                                <i class="fas fa-image text-slate-400 text-xl" id="setup-logo-icon"></i>
+                            </div>
+                            <div class="flex flex-col gap-2 flex-1">
+                                <input type="file" id="setup-inst-logo" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">
+                                <button onclick="document.getElementById('setup-inst-logo').click()" class="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 w-full text-center transition-colors"><i class="fas fa-upload mr-1"></i> Upload / Update</button>
+                                <button id="btn-remove-logo" onclick="removeLogo()" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-100 w-full text-center transition-colors hidden"><i class="fas fa-trash mr-1"></i> Remove Logo</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="setup-logo-base64">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Academic Calendar</h3>
+                    <!-- Class configs injected here -->
+                </div>
+            </div>
+
+            <button onclick="saveGlobalSetup()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2 mb-10">
+                <i class="fas fa-save"></i> Save Global Configuration
+            </button>
+        </div>
+
+        <!-- View: Admin - Manage Students -->
+        <div id="view-admin-students" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-users text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Manage Students</h2>
+            </div>
+            <p class="text-sm text-slate-500 mb-6">Add or edit students for the currently selected class.</p>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
+                    <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors whitespace-nowrap">Add</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
+                    <span>Roll / Name</span>
+                    <span>Action</span>
+                </div>
+                <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
+                    <!-- Students list injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Admin - Timetable Editor -->
+        <div id="view-admin-timetable" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-calendar-alt text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Timetable Editor</h2>
+            </div>
+            <p class="text-sm text-slate-500 mb-6">Configure periods and subjects for each day.</p>
+
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Day</label>
+                <select id="admin-timetable-day" onchange="renderAdminTimetableForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
+                    <option value="Sunday">Sunday</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Saturday">Saturday</option>
+                    <!-- Friday usually holiday, can add if needed -->
+                </select>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between" id="admin-timetable-day-title">
+                    Configure Day
+                </h3>
+                <div id="admin-timetable-periods" class="space-y-4">
+                    <!-- Period inputs injected here based on class config -->
+                </div>
+                <div class="mt-6">
+                    <button onclick="saveAdminTimetable()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors flex justify-center items-center gap-2">
+                        <i class="fas fa-save"></i> Save Timetable for Day
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Admin - Syllabus Targets -->
+        <div id="view-admin-syllabus" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-tasks text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Syllabus Targets</h2>
+            </div>
+            <p class="text-sm text-slate-500 mb-6">Set target lesson numbers for each subject per month.</p>
+
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month to Configure</label>
+                <select id="admin-syllabus-month" onchange="renderAdminSyllabusForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
+                    <!-- Months populated based on config -->
+                </select>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Target Lesson Numbers</h3>
+                <div id="admin-syllabus-subjects" class="space-y-4">
+                    <!-- Subject inputs injected here based on class config -->
+                </div>
+                <div class="mt-6">
+                    <button onclick="saveAdminSyllabus()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors flex justify-center items-center gap-2">
+                        <i class="fas fa-save"></i> Save Targets for Month
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Image Cropper Modal -->
+    <div id="cropper-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-md p-4 flex flex-col h-[75vh] shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800">Crop Logo</h3>
+                <button onclick="closeCropper()" class="text-slate-400 hover:text-slate-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 min-h-0 relative bg-slate-900 rounded-lg overflow-hidden">
+                <img id="cropper-image" src="" class="block max-w-full">
+            </div>
+            <div class="mt-4 flex gap-3">
+                <button onclick="closeCropper()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onclick="applyCrop()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"><i class="fas fa-crop-alt mr-1"></i> Apply & Compress</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAlert()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 transform scale-95 transition-transform duration-200" id="alert-content">
+            <div class="text-center">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" id="alert-icon-container">
+                    <i class="fas fa-info text-2xl" id="alert-icon"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 mb-2" id="alert-title">Notification</h3>
+                <p class="text-sm text-slate-600 mb-6" id="alert-message">Message goes here.</p>
+                <button onclick="closeAlert()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition-colors">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script type="module">
+        // --- 1. Firebase Initialization & Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // Fallback for local testing if needed, but normally injected
+            apiKey: "AIzaSyAfJSonmGHnf0t92B71ycuAZbc-CV3k7LE",
+            authDomain: "fest-dsd-003.firebaseapp.com",
+            projectId: "fest-dsd-003",
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-madrasa-app';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let currentUser = null;
+
+        // Constants
+        const ENGLISH_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
+        const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        // --- 2. Auth & Initialization ---
+        async function initApp() {
+            showLoading(true);
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                showAlert("Authentication Failed", "Could not connect to database.", "error");
+                showLoading(false);
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadGlobalConfig();
+                updateHeaderUI();
+                setupGlobalClassSelector();
+                updateUIForMode();
+                showLoading(false);
+            }
+        });
+
+        // Initialize immediately
+        initApp();
+
+        // --- 3. UI Helpers & Navigation ---
+        window.toggleMenu = function() {
+            const menu = document.getElementById('side-menu');
+            const panel = document.getElementById('menu-panel');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+            } else {
+                panel.classList.add('translate-x-full');
+                setTimeout(() => menu.classList.add('hidden'), 300);
+            }
+        };
+
+        window.navigate = function(viewId) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            AppState.currentView = viewId;
+            
+            // Route handlers
+            if(!AppState.currentClassId && viewId !== 'view-admin-setup') {
+                showAlert("Setup Required", "Please configure the app and select a class first.", "warning");
+                return;
+            }
+
+            if(viewId === 'view-home') renderHomeView();
+            if(viewId === 'view-tracker') renderTrackerView();
+            if(viewId === 'view-syllabus') renderSyllabusView();
+            if(viewId === 'view-admin-students') renderAdminStudents();
+            if(viewId === 'view-admin-timetable') renderAdminTimetableForm();
+            if(viewId === 'view-admin-syllabus') renderAdminSyllabusForm();
+        };
+
+        window.toggleAppMode = function(isAdmin) {
+            AppState.mode = isAdmin ? 'admin' : 'user';
+            
+            const dot = document.getElementById('toggle-dot');
+            const bg = document.getElementById('toggle-bg');
+            const icon = document.getElementById('toggle-icon');
+            
+            if(isAdmin) {
+                dot.classList.add('translate-x-6');
+                bg.classList.replace('bg-slate-200', 'bg-blue-600');
+                icon.className = 'fas fa-shield-alt text-xs text-blue-600';
+            } else {
+                dot.classList.remove('translate-x-6');
+                bg.classList.replace('bg-blue-600', 'bg-slate-200');
+                icon.className = 'fas fa-user text-xs text-slate-500';
+            }
+
+            updateUIForMode();
+        };
+
+        function updateUIForMode() {
+            const adminMenu = document.getElementById('menu-admin');
+            const userMenu = document.getElementById('menu-user');
+            const classSelector = document.getElementById('class-selector-container');
+            const menuTitle = document.getElementById('menu-title');
+
+            if (AppState.mode === 'admin') {
+                adminMenu.classList.remove('hidden');
+                userMenu.classList.add('hidden');
+                classSelector.classList.remove('hidden'); // Admin needs class selector often
+                menuTitle.innerText = "Admin Panel";
+                
+                // Force navigate to setup if no config
+                if (!AppState.config || !AppState.config.classes || AppState.config.classes.length === 0) {
+                    navigate('view-admin-setup');
+                    renderAdminSetup();
+                } else {
+                    navigate('view-admin-setup'); // Default admin page
+                    renderAdminSetup();
+                }
+            } else {
+                adminMenu.classList.add('hidden');
+                userMenu.classList.remove('hidden');
+                
+                if (!AppState.config || !AppState.config.classes || AppState.config.classes.length === 0) {
+                    // No config, cannot show user views. Tell them to switch to admin.
+                    showAlert("App Not Configured", "Please switch to Admin mode to setup classes.", "warning");
+                    classSelector.classList.add('hidden');
+                } else {
+                    classSelector.classList.remove('hidden');
+                    navigate('view-home');
+                }
+                menuTitle.innerText = "Menu";
+            }
+        }
+
+        window.changeGlobalClass = function(classId) {
+            AppState.currentClassId = classId;
+            // Re-render current view based on new class
+            navigate(AppState.currentView);
+        };
+
+        function setupGlobalClassSelector() {
+            const selector = document.getElementById('global-class-selector');
+            selector.innerHTML = '';
+            
+            if (AppState.config && AppState.config.classes && AppState.config.classes.length > 0) {
+                AppState.config.classes.forEach(cls => {
+                    const opt = document.createElement('option');
+                    opt.value = cls.id;
+                    opt.textContent = cls.name;
+                    selector.appendChild(opt);
+                });
+                // Set initial class if not set
+                if (!AppState.currentClassId) {
+                    AppState.currentClassId = AppState.config.classes[0].id;
+                }
+                selector.value = AppState.currentClassId;
+                document.getElementById('class-selector-container').classList.remove('hidden');
+            } else {
+                document.getElementById('class-selector-container').classList.add('hidden');
+            }
+        }
+
+        function getCurrentClassConfig() {
+            if (!AppState.config || !AppState.config.classes) return null;
+            return AppState.config.classes.find(c => c.id === AppState.currentClassId) || null;
+        }
+
+        function getActiveMonthsList() {
+            if (!AppState.config) return ENGLISH_MONTHS;
+            const list = AppState.config.calendarType === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
+            return list; 
+        }
+
+        // --- Header UI Update ---
+        window.updateHeaderUI = function() {
+            const config = AppState.config || {};
+            
+            const titleEl = document.getElementById('app-header-title');
+            const subEl = document.getElementById('app-header-subtitle');
+            const logoEl = document.getElementById('app-header-logo');
+            const fallbackEl = document.getElementById('app-logo-fallback');
+            const containerEl = document.getElementById('app-logo-container');
+
+            titleEl.innerText = config.instName || 'NOORUN ALA NOOR';
+            subEl.innerText = config.instSubtitle || 'MADRASA TRACKER';
+
+            if (config.instLogo) {
+                logoEl.src = config.instLogo;
+                logoEl.classList.remove('hidden');
+                fallbackEl.classList.add('hidden');
+                containerEl.classList.replace('bg-[#f4eadd]', 'bg-white');
+                containerEl.classList.replace('border-[#e5d5c5]', 'border-slate-200');
+            } else {
+                logoEl.src = '';
+                logoEl.classList.add('hidden');
+                fallbackEl.classList.remove('hidden');
+                containerEl.classList.replace('bg-white', 'bg-[#f4eadd]');
+                containerEl.classList.replace('border-slate-200', 'border-[#e5d5c5]');
+            }
+        };
+
+        // --- Custom Alert ---
+        window.showAlert = function(title, message, type="info") {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            
+            const iconContainer = document.getElementById('alert-icon-container');
+            const icon = document.getElementById('alert-icon');
+            
+            iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4";
+            
+            if (type === 'success') {
+                iconContainer.classList.add('bg-green-100', 'text-green-600');
+                icon.className = "fas fa-check text-3xl";
+            } else if (type === 'error') {
+                iconContainer.classList.add('bg-red-100', 'text-red-600');
+                icon.className = "fas fa-times text-3xl";
+            } else if (type === 'warning') {
+                iconContainer.classList.add('bg-yellow-100', 'text-yellow-600');
+                icon.className = "fas fa-exclamation-triangle text-3xl";
+            } else {
+                iconContainer.classList.add('bg-blue-100', 'text-blue-600');
+                icon.className = "fas fa-info text-3xl";
+            }
+            
+            const modal = document.getElementById('alert-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('alert-content').classList.remove('scale-95'), 10);
+        };
+
+        window.closeAlert = function() {
+            document.getElementById('alert-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('alert-modal').classList.add('hidden'), 200);
+        };
+
+        function showLoading(show) {
+            const el = document.getElementById('loading-overlay');
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
+        // --- 4. Database Operations ---
+
+        const getPublicRef = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+        const getConfigDoc = () => doc(db, 'artifacts', appId, 'public', 'data', 'config', 'global');
+        const getTimetableDoc = (classId) => doc(db, 'artifacts', appId, 'public', 'data', 'config', `timetable_${classId}`);
+        const getSyllabusDoc = (classId) => doc(db, 'artifacts', appId, 'public', 'data', 'config', `syllabus_${classId}`);
+
+        async function loadGlobalConfig() {
+            if (!currentUser) return;
+            try {
+                const docSnap = await getDoc(getConfigDoc());
+                if (docSnap.exists()) {
+                    AppState.config = docSnap.data();
+                } else {
+                    AppState.config = { classes: [], calendarType: 'english', startMonth: 'January', endMonth: 'December' };
+                }
+            } catch (e) {
+                console.error("Error loading config", e);
+            }
+        }
+
+        // --- 5. Admin View Renderers ---
+
+        let cropperInstance = null;
+
+        window.handleLogoUpload = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('cropper-image');
+                    img.src = e.target.result;
+                    document.getElementById('cropper-modal').classList.remove('hidden');
+                    
+                    if (cropperInstance) {
+                        cropperInstance.destroy();
+                    }
+                    
+                    // Initialize cropper after a tiny delay to allow modal render
+                    setTimeout(() => {
+                        cropperInstance = new Cropper(img, {
+                            aspectRatio: 1, // Force square crop
+                            viewMode: 2,
+                            dragMode: 'move',
+                            autoCropArea: 0.9,
+                            restore: false,
+                            guides: true,
+                            center: true,
+                            highlight: false,
+                            cropBoxMovable: true,
+                            cropBoxResizable: true,
+                            toggleDragModeOnDblclick: false,
+                        });
+                    }, 50);
+                };
+                reader.readAsDataURL(file);
+                event.target.value = ''; // Reset input to allow re-uploading same file
+            }
+        };
+
+        window.closeCropper = function() {
+            document.getElementById('cropper-modal').classList.add('hidden');
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+        };
+
+        window.applyCrop = function() {
+            if (!cropperInstance) return;
+            
+            showLoading(true);
+            setTimeout(() => {
+                // Get cropped canvas (limit dimensions to save space)
+                const canvas = cropperInstance.getCroppedCanvas({
+                    width: 400, 
+                    height: 400
+                });
+                
+                let quality = 0.9;
+                let base64String = canvas.toDataURL('image/jpeg', quality);
+                
+                // Compress until size is roughly <= 200KB (200KB = 204800 bytes)
+                // Base64 size formula approx: length * (3/4)
+                while ((base64String.length * 0.75) > 204800 && quality > 0.1) {
+                    quality -= 0.1;
+                    base64String = canvas.toDataURL('image/jpeg', quality);
+                }
+                
+                document.getElementById('setup-logo-base64').value = base64String;
+                document.getElementById('setup-logo-preview').src = base64String;
+                document.getElementById('setup-logo-preview').classList.remove('hidden');
+                document.getElementById('setup-logo-icon').classList.add('hidden');
+                document.getElementById('btn-remove-logo').classList.remove('hidden');
+                
+                closeCropper();
+                showLoading(false);
+            }, 100);
+        };
+
+        window.removeLogo = function() {
+            document.getElementById('setup-logo-base64').value = '';
+            document.getElementById('setup-logo-preview').src = '';
+            document.getElementById('setup-logo-preview').classList.add('hidden');
+            document.getElementById('setup-logo-icon').classList.remove('hidden');
+            document.getElementById('btn-remove-logo').classList.add('hidden');
+        };
+
+        window.renderAdminSetup = function() {
+            const config = AppState.config;
+            
+            // Populate Institution Details
+            document.getElementById('setup-inst-name').value = config.instName || '';
+            document.getElementById('setup-inst-sub').value = config.instSubtitle || '';
+            
+            if (config.instLogo) {
+                document.getElementById('setup-logo-base64').value = config.instLogo;
+                document.getElementById('setup-logo-preview').src = config.instLogo;
+                document.getElementById('setup-logo-preview').classList.remove('hidden');
+                document.getElementById('setup-logo-icon').classList.add('hidden');
+                document.getElementById('btn-remove-logo').classList.remove('hidden');
+            } else {
+                document.getElementById('setup-logo-base64').value = '';
+                document.getElementById('setup-logo-preview').src = '';
+                document.getElementById('setup-logo-preview').classList.add('hidden');
+                document.getElementById('setup-logo-icon').classList.remove('hidden');
+                document.getElementById('btn-remove-logo').classList.add('hidden');
+            }
+
+            document.getElementById('setup-cal-type').value = config.calendarType || 'english';
+            window.updateSetupMonths();
+            
+            setTimeout(() => {
+                document.getElementById('setup-cal-start').value = config.startMonth || '';
+                document.getElementById('setup-cal-end').value = config.endMonth || '';
+            }, 50);
+
+            renderAdminClassesList();
+        };
+
+        window.updateSetupMonths = function() {
+            const type = document.getElementById('setup-cal-type').value;
+            const startSel = document.getElementById('setup-cal-start');
+            const endSel = document.getElementById('setup-cal-end');
+            
+            startSel.innerHTML = '';
+            endSel.innerHTML = '';
+            
+            const list = type === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
+            list.forEach(m => {
+                startSel.add(new Option(m, m));
+                endSel.add(new Option(m, m));
+            });
+        };
+
+        window.adminAddClass = function() {
+            const classId = 'class_' + Date.now();
+            AppState.config.classes.push({
+                id: classId,
+                name: `New Class ${AppState.config.classes.length + 1}`,
+                periodsCount: 3,
+                subjects: []
+            });
+            renderAdminClassesList();
+        };
+
+        window.adminRemoveClass = function(classId) {
+            AppState.config.classes = AppState.config.classes.filter(c => c.id !== classId);
+            renderAdminClassesList();
+        };
+
+        window.updateClassField = function(classId, field, value) {
+            const cls = AppState.config.classes.find(c => c.id === classId);
+            if (cls) {
+                if (field === 'periodsCount') cls[field] = parseInt(value) || 1;
+                else cls[field] = value;
+            }
+        };
+
+        window.updateClassSubjects = function(classId, value) {
+            const cls = AppState.config.classes.find(c => c.id === classId);
+            if (cls) {
+                // simple comma separated parsing
+                cls.subjects = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            }
+        };
+
+        function renderAdminClassesList() {
+            const container = document.getElementById('setup-classes-container');
+            container.innerHTML = '';
+            
+            if(AppState.config.classes.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No classes added yet.</p>';
+                return;
+            }
+
+            AppState.config.classes.forEach(cls => {
+                const subjsStr = (cls.subjects || []).join(', ');
+                container.innerHTML += `
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative">
+                        <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200"><i class="fas fa-trash text-xs"></i></button>
+                        
+                        <div class="mb-3 pr-10">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Class Name</label>
+                            <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-bold text-[#0f172a]">
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div class="col-span-1">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Periods</label>
+                                <input type="number" min="1" max="10" value="${cls.periodsCount || 3}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-center">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subjects (Comma separated)</label>
+                                <input type="text" value="${subjsStr}" onchange="updateClassSubjects('${cls.id}', this.value)" placeholder="e.g. Quran, Fiqh, Aqeedah" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.saveGlobalSetup = async function() {
+            if (!currentUser) return;
+            showLoading(true);
+            try {
+                AppState.config.instName = document.getElementById('setup-inst-name').value;
+                AppState.config.instSubtitle = document.getElementById('setup-inst-sub').value;
+                AppState.config.instLogo = document.getElementById('setup-logo-base64').value;
+                
+                AppState.config.calendarType = document.getElementById('setup-cal-type').value;
+                AppState.config.startMonth = document.getElementById('setup-cal-start').value;
+                AppState.config.endMonth = document.getElementById('setup-cal-end').value;
+
+                await setDoc(getConfigDoc(), AppState.config);
+                
+                // Refresh header & selector
+                updateHeaderUI();
+                setupGlobalClassSelector();
+                showAlert("Success", "Global configuration saved successfully.", "success");
+            } catch(e) {
+                console.error(e);
+                showAlert("Error", "Failed to save configuration.", "error");
+            }
+            showLoading(false);
+        };
+
+        // --- Admin: Students ---
+        window.renderAdminStudents = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+            
+            showLoading(true);
+            const listEl = document.getElementById('admin-students-list');
+            listEl.innerHTML = '';
+            
+            try {
+                // Use a standard collection query, filter in memory
+                const querySnapshot = await getDocs(getPublicRef('students'));
+                let students = [];
+                querySnapshot.forEach(doc => {
+                    let d = doc.data();
+                    if(d.classId === classConfig.id) {
+                        students.push({...d, docId: doc.id});
+                    }
+                });
+                
+                students.sort((a,b) => a.rollNo - b.rollNo);
+
+                if (students.length === 0) {
+                    listEl.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No students found for this class.</div>';
+                } else {
+                    students.forEach(s => {
+                        listEl.innerHTML += `
+                            <div class="p-3 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">${s.rollNo}</div>
+                                    <div class="text-sm font-bold text-slate-800">${s.name}</div>
+                                </div>
+                                <button onclick="deleteStudent('${s.docId}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100"><i class="fas fa-trash text-xs"></i></button>
+                            </div>
+                        `;
+                    });
+                }
+            } catch(e) {
+                console.error(e);
+                listEl.innerHTML = '<div class="p-4 text-center text-sm text-red-400">Error loading students.</div>';
+            }
+            showLoading(false);
+        };
+
+        window.adminAddStudent = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+            const nameInput = document.getElementById('new-student-name');
+            const name = nameInput.value.trim();
+            if(!name) { showAlert("Error", "Enter student name.", "warning"); return; }
+
+            showLoading(true);
+            try {
+                // Get next roll number
+                const querySnapshot = await getDocs(getPublicRef('students'));
+                let maxRoll = 0;
+                querySnapshot.forEach(doc => {
+                    let d = doc.data();
+                    if(d.classId === classConfig.id && d.rollNo > maxRoll) maxRoll = d.rollNo;
+                });
+
+                const newRef = doc(getPublicRef('students'));
+                await setDoc(newRef, {
+                    classId: classConfig.id,
+                    name: name,
+                    rollNo: maxRoll + 1,
+                    addedAt: new Date().toISOString()
+                });
+                
+                nameInput.value = '';
+                await renderAdminStudents();
+            } catch(e) {
+                console.error(e);
+                showAlert("Error", "Could not add student.", "error");
+            }
+            showLoading(false);
+        };
+
+        window.deleteStudent = async function(docId) {
+            if(!confirm("Delete this student?")) return;
+            showLoading(true);
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'students', docId));
+                await renderAdminStudents();
+            } catch(e) {
+                showAlert("Error", "Could not delete student.", "error");
+            }
+            showLoading(false);
+        };
+
+        // --- Admin: Timetable ---
+        window.renderAdminTimetableForm = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+            
+            const day = document.getElementById('admin-timetable-day').value;
+            document.getElementById('admin-timetable-day-title').innerText = `${day} Timetable`;
+            
+            const container = document.getElementById('admin-timetable-periods');
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center">Loading...</p>';
+            
+            try {
+                const ttDoc = await getDoc(getTimetableDoc(classConfig.id));
+                let ttData = ttDoc.exists() ? ttDoc.data() : {};
+                let dayData = ttData[day] || [];
+                
+                container.innerHTML = '';
+                const maxP = classConfig.periodsCount || 3;
+                const subjects = classConfig.subjects || [];
+                
+                let subOptions = `<option value="">-- Free / None --</option>`;
+                subjects.forEach(s => subOptions += `<option value="${s}">${s}</option>`);
+
+                for(let i=0; i<maxP; i++) {
+                    const pData = dayData[i] || { start: '', end: '', subject: '' };
+                    container.innerHTML += `
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                            <div class="text-xs font-bold text-blue-600 uppercase mb-2">Period ${i+1}</div>
+                            <div class="grid grid-cols-2 gap-3 mb-2">
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 uppercase">Start Time</label>
+                                    <input type="time" id="tt_start_${i}" value="${pData.start}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-500 uppercase">End Time</label>
+                                    <input type="time" id="tt_end_${i}" value="${pData.end}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-500 uppercase">Subject</label>
+                                <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm font-medium outline-none focus:border-blue-500">
+                                    ${subOptions}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                    // Set selected subject after injection
+                    setTimeout(() => {
+                        if(pData.subject) document.getElementById(`tt_sub_${i}`).value = pData.subject;
+                    }, 10);
+                }
+            } catch(e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-sm text-red-500">Error loading timetable data.</p>';
+            }
+        };
+
+        window.saveAdminTimetable = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+            const day = document.getElementById('admin-timetable-day').value;
+            const maxP = classConfig.periodsCount || 3;
+            
+            let dayArray = [];
+            for(let i=0; i<maxP; i++) {
+                dayArray.push({
+                    start: document.getElementById(`tt_start_${i}`).value,
+                    end: document.getElementById(`tt_end_${i}`).value,
+                    subject: document.getElementById(`tt_sub_${i}`).value
+                });
+            }
+
+            showLoading(true);
+            try {
+                const ttRef = getTimetableDoc(classConfig.id);
+                // merge
+                await setDoc(ttRef, { [day]: dayArray }, { merge: true });
+                showAlert("Saved", `Timetable for ${day} saved.`, "success");
+            } catch(e) {
+                console.error(e);
+                showAlert("Error", "Could not save timetable.", "error");
+            }
+            showLoading(false);
+        };
+
+        // --- Admin: Syllabus ---
+        window.renderAdminSyllabusForm = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+
+            const monthSel = document.getElementById('admin-syllabus-month');
+            if(monthSel.options.length === 0) {
+                const months = getActiveMonthsList();
+                months.forEach(m => monthSel.add(new Option(m, m)));
+            }
+
+            const month = monthSel.value;
+            const container = document.getElementById('admin-syllabus-subjects');
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center">Loading...</p>';
+
+            try {
+                const sylDoc = await getDoc(getSyllabusDoc(classConfig.id));
+                let sylData = sylDoc.exists() ? sylDoc.data() : {};
+                let monthData = sylData[month] || {};
+
+                container.innerHTML = '';
+                const subjects = classConfig.subjects || [];
+                
+                if(subjects.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-slate-500">No subjects defined for this class.</p>';
+                    return;
+                }
+
+                subjects.forEach((s, idx) => {
+                    const target = monthData[s] || '';
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-lg p-3">
+                            <div class="font-bold text-slate-700 text-sm w-1/2">${s}</div>
+                            <div class="w-1/2 flex items-center gap-2 justify-end">
+                                <span class="text-xs text-slate-500 uppercase font-bold">Target Lsn:</span>
+                                <input type="number" id="syl_tgt_${idx}" value="${target}" class="w-20 bg-white border border-slate-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-purple-500">
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-sm text-red-500">Error loading syllabus data.</p>';
+            }
+        };
+
+        window.saveAdminSyllabus = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+            const month = document.getElementById('admin-syllabus-month').value;
+            const subjects = classConfig.subjects || [];
+            
+            let monthObj = {};
+            subjects.forEach((s, idx) => {
+                monthObj[s] = document.getElementById(`syl_tgt_${idx}`).value;
+            });
+
+            showLoading(true);
+            try {
+                const sylRef = getSyllabusDoc(classConfig.id);
+                await setDoc(sylRef, { [month]: monthObj }, { merge: true });
+                showAlert("Saved", `Syllabus targets for ${month} saved.`, "success");
+            } catch(e) {
+                console.error(e);
+                showAlert("Error", "Could not save targets.", "error");
+            }
+            showLoading(false);
+        };
+
+        // --- 6. User Views Renderers ---
+
+        window.renderHomeView = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+
+            const date = new Date();
+            const dayName = DAYS_OF_WEEK[date.getDay()];
+            
+            document.getElementById('home-day-title').innerText = dayName;
+            document.getElementById('home-date-subtitle').innerText = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'});
+            document.getElementById('home-class-badge').innerText = classConfig.name;
+
+            const container = document.getElementById('home-timetable-container');
+            const emptyState = document.getElementById('home-empty-state');
+            
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>';
+            emptyState.classList.add('hidden');
+
+            try {
+                const ttDoc = await getDoc(getTimetableDoc(classConfig.id));
+                let ttData = ttDoc.exists() ? ttDoc.data() : {};
+                let dayData = ttData[dayName] || [];
+
+                // Filter out empty periods
+                dayData = dayData.filter(p => p.subject && p.subject.trim() !== '');
+
+                if (dayData.length === 0) {
+                    container.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                } else {
+                    container.innerHTML = '';
+                    dayData.forEach((p, idx) => {
+                        const timeStr = (p.start && p.end) ? `${p.start} - ${p.end}` : 'Time not set';
+                        // Generate a random pastel color based on subject name length for visual variety
+                        const colors = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200', 'bg-purple-50 text-purple-800 border-purple-200'];
+                        const colClass = colors[p.subject.length % colors.length];
+
+                        container.innerHTML += `
+                            <div class="relative overflow-hidden ${colClass} border rounded-2xl p-5 shadow-sm transform transition hover:-translate-y-1">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-white opacity-20 rounded-bl-full -mr-4 -mt-4"></div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold uppercase tracking-wider opacity-70">Period ${idx + 1}</span>
+                                    <span class="text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full"><i class="far fa-clock mr-1"></i>${timeStr}</span>
+                                </div>
+                                <h3 class="text-2xl font-black mt-2 tracking-tight">${p.subject}</h3>
+                            </div>
+                        `;
+                    });
+                }
+            } catch(e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load timetable.</p>';
+            }
+        };
+
+        // Current state for tracker
+        let trackerData = {}; 
+
+        window.renderTrackerView = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+
+            const subSel = document.getElementById('tracker-subject-select');
+            // Store current selection if any
+            const currentSub = subSel.value;
+            
+            subSel.innerHTML = '<option value="">-- Choose Subject --</option>';
+            (classConfig.subjects || []).forEach(s => {
+                subSel.add(new Option(s, s));
+            });
+            if(currentSub && classConfig.subjects.includes(currentSub)) subSel.value = currentSub;
+            
+            subSel.onchange = loadTrackerStudents;
+            if(subSel.value) loadTrackerStudents();
+            else document.getElementById('tracker-students-list').innerHTML = '<div class="text-center text-sm text-slate-400 py-10"><i class="fas fa-hand-pointer text-2xl mb-2 block"></i>Select subject first</div>';
+        };
+
+        window.loadTrackerStudents = async function() {
+            const classConfig = getCurrentClassConfig();
+            const subject = document.getElementById('tracker-subject-select').value;
+            const listEl = document.getElementById('tracker-students-list');
+            
+            if(!subject) {
+                listEl.innerHTML = ''; return;
+            }
+
+            listEl.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-green-500"></i></div>';
+            
+            try {
+                // Get students
+                const qs = await getDocs(getPublicRef('students'));
+                let students = [];
+                qs.forEach(d => {
+                    let data = d.data();
+                    if(data.classId === classConfig.id) students.push({...data, id: d.id});
+                });
+                students.sort((a,b) => a.rollNo - b.rollNo);
+
+                // Get today's tracking data if exists
+                const dateStr = new Date().toISOString().split('T')[0];
+                const trackId = `${classConfig.id}_${dateStr}_${subject.replace(/\s+/g,'_')}`;
+                
+                const trDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'daily_tracking', trackId));
+                trackerData = trDoc.exists() ? trDoc.data().students : {};
+
+                listEl.innerHTML = '';
+                if(students.length===0){
+                    listEl.innerHTML = '<div class="text-center text-sm text-slate-400">No students found.</div>';
+                    return;
+                }
+
+                students.forEach(s => {
+                    const status = trackerData[s.id] || 'pending'; // pending, asked, absent
+                    
+                    let bgClass = 'bg-white border-slate-200';
+                    let icon = '<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+                    
+                    if(status === 'asked') {
+                        bgClass = 'bg-green-50 border-green-300 shadow-inner';
+                        icon = '<i class="fas fa-check-circle text-green-500 text-xl"></i>';
+                    } else if (status === 'absent') {
+                        bgClass = 'bg-red-50 border-red-200 shadow-inner opacity-75';
+                        icon = '<i class="fas fa-times-circle text-red-400 text-xl"></i>';
+                    }
+
+                    listEl.innerHTML += `
+                        <div onclick="cycleStudentStatus('${s.id}')" id="card_${s.id}" class="flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all ${bgClass} select-none active:scale-95">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 shadow-sm">${s.rollNo}</div>
+                                <div class="font-bold text-slate-800 text-sm">${s.name}</div>
+                            </div>
+                            <div id="icon_${s.id}">${icon}</div>
+                        </div>
+                    `;
+                });
+            } catch(e) {
+                console.error(e);
+                listEl.innerHTML = '<div class="text-red-500 text-sm text-center">Error loading data.</div>';
+            }
+        };
+
+        window.cycleStudentStatus = function(sid) {
+            const current = trackerData[sid] || 'pending';
+            let next = 'asked';
+            if (current === 'asked') next = 'absent';
+            else if (current === 'absent') next = 'pending';
+            
+            trackerData[sid] = next;
+            
+            // Fast UI update
+            const card = document.getElementById(`card_${sid}`);
+            const iconC = document.getElementById(`icon_${sid}`);
+            
+            card.className = "flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all select-none active:scale-95 " + 
+                (next === 'asked' ? 'bg-green-50 border-green-300 shadow-inner' : 
+                 next === 'absent' ? 'bg-red-50 border-red-200 shadow-inner opacity-75' : 
+                 'bg-white border-slate-200');
+                 
+            iconC.innerHTML = (next === 'asked' ? '<i class="fas fa-check-circle text-green-500 text-xl"></i>' : 
+                               next === 'absent' ? '<i class="fas fa-times-circle text-red-400 text-xl"></i>' : 
+                               '<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>');
+        };
+
+        window.saveDailyTracking = async function() {
+            const classConfig = getCurrentClassConfig();
+            const subject = document.getElementById('tracker-subject-select').value;
+            if(!classConfig || !subject) {
+                showAlert("Wait", "Select a subject first.", "warning"); return;
+            }
+
+            const dateStr = new Date().toISOString().split('T')[0];
+            const trackId = `${classConfig.id}_${dateStr}_${subject.replace(/\s+/g,'_')}`;
+            
+            showLoading(true);
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'daily_tracking', trackId), {
+                    date: dateStr,
+                    subject: subject,
+                    classId: classConfig.id,
+                    students: trackerData,
+                    updatedAt: new Date().toISOString()
+                });
+                showAlert("Saved", "Tracking data saved successfully.", "success");
+            } catch(e) {
+                console.error(e);
+                showAlert("Error", "Could not save data.", "error");
+            }
+            showLoading(false);
+        };
+
+        // --- Syllabus View ---
+        window.renderSyllabusView = async function() {
+            const classConfig = getCurrentClassConfig();
+            if(!classConfig) return;
+
+            const monthSel = document.getElementById('progress-month-select');
+            const currentSel = monthSel.value;
+            monthSel.innerHTML = '';
+            getActiveMonthsList().forEach(m => monthSel.add(new Option(m,m)));
+            if(currentSel) monthSel.value = currentSel;
+            
+            monthSel.onchange = loadSyllabusProgress;
+            loadSyllabusProgress();
+        };
+
+        window.loadSyllabusProgress = async function() {
+            const classConfig = getCurrentClassConfig();
+            const month = document.getElementById('progress-month-select').value;
+            const container = document.getElementById('progress-subjects-list');
+            if(!classConfig || !month) return;
+
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-purple-500"></i></div>';
+
+            try {
+                // Get Target Data
+                const sylDoc = await getDoc(getSyllabusDoc(classConfig.id));
+                const targetData = (sylDoc.exists() ? sylDoc.data()[month] : {}) || {};
+                
+                // Get Progress Data
+                const progDocId = `${classConfig.id}_${month.replace(/\s+/g,'_')}`;
+                const progDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'syllabus_tracking', progDocId));
+                const progressData = (progDoc.exists() ? progDoc.data().completed : {}) || {};
+
+                container.innerHTML = '';
+                const subjects = classConfig.subjects || [];
+                
+                if(subjects.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-slate-500 text-center">No subjects found.</p>';
+                    return;
+                }
+
+                subjects.forEach((s, idx) => {
+                    const target = targetData[s] || '0';
+                    const completed = progressData[s] || '0';
+                    
+                    let pct = 0;
+                    if(parseInt(target) > 0) {
+                        pct = Math.min(100, Math.round((parseInt(completed) / parseInt(target)) * 100));
+                    }
+
+                    container.innerHTML += `
+                        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                            <div class="flex justify-between items-center mb-3">
+                                <div class="font-bold text-[#0f172a]">${s}</div>
+                                <div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">Target: Lesson ${target}</div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Completed:</span>
+                                <input type="number" id="prog_comp_${idx}" value="${completed}" data-subject="${s}" class="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-purple-500">
+                            </div>
+
+                            <div class="w-full bg-slate-100 rounded-full h-2 mb-1 overflow-hidden">
+                                <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                            </div>
+                            <div class="text-right text-[10px] font-bold text-slate-400">${pct}% to target</div>
+                        </div>
+                    `;
+                });
+
+            } catch(e) {
+                console.error(e);
+                container.innerHTML = '<p class="text-sm text-red-500 text-center">Error loading progress.</p>';
+            }
+        };
+
+        window.saveSyllabusProgress = async function() {
+            const classConfig = getCurrentClassConfig();
+            const month = document.getElementById('progress-month-select').value;
+            if(!classConfig || !month) return;
+
+            const subjects = classConfig.subjects || [];
+            let compData = {};
+            
+            subjects.forEach((s, idx) => {
+                const el = document.getElementById(`prog_comp_${idx}`);
+                if(el) compData[s] = el.value;
+            });
+
+            const progDocId = `${classConfig.id}_${month.replace(/\s+/g,'_')}`;
+            showLoading(true);
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'syllabus_tracking', progDocId), {
+                    classId: classConfig.id,
+                    month: month,
+                    completed: compData,
+                    updatedAt: new Date().toISOString()
+                });
+                showAlert("Saved", "Syllabus progress updated.", "success");
+                await loadSyllabusProgress(); // refresh bars
+            } catch(e) {
+                console.error(e);
+                showAlert("Error", "Could not save progress.", "error");
+            }
+            showLoading(false);
+        };
+
+    </script>
+</body>
+</html>1
