@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Noorun Ala Noor - Madrasa Tracker</title>
+    <title>Noorun Ala Noor - Madrasa ERP</title>
+    
+    <!-- External Libraries: Tailwind, FontAwesome, Cropper.js -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Cropper.js for Image Cropping -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -22,6 +22,10 @@
         .toggle-checkbox:checked { right: 0; border-color: #10b981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
         .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
+
+        /* Unified Chip Radio Styles (Tabs) */
+        .chip-input:checked + .chip-label { background-color: #0f172a; color: white; border-color: #0f172a; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.3); }
+        .chip-input-amber:checked + .chip-label { background-color: #f59e0b; color: white; border-color: #f59e0b; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3); }
     </style>
 </head>
 <body class="text-slate-800 antialiased overflow-x-hidden">
@@ -29,10 +33,12 @@
     <!-- Global App State -->
     <script>
         const AppState = {
-            mode: 'user', // 'user' or 'admin'
+            mode: 'user', 
             currentView: 'view-home',
             currentClassId: null,
-            config: { classes: [] }
+            config: { classes: [] },
+            tasks: [],
+            students: []
         };
     </script>
 
@@ -41,17 +47,17 @@
         <div class="px-4 py-3 flex justify-between items-center max-w-md mx-auto">
             <!-- Logo & Title -->
             <div class="flex items-center gap-3">
-                <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative">
+                <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative shadow-sm">
                     <span id="app-logo-fallback">നൂർ</span>
                     <img id="app-header-logo" src="" class="w-full h-full object-cover hidden absolute inset-0">
                 </div>
                 <div>
-                    <h1 id="app-header-title" class="font-bold text-sm text-[#0f172a] leading-tight tracking-wide">NOORUN ALA NOOR</h1>
-                    <p id="app-header-subtitle" class="text-[10px] text-slate-500 font-medium uppercase">MADRASA TRACKER</p>
+                    <h1 id="app-header-title" class="font-bold text-sm text-[#0f172a] leading-tight tracking-wide truncate max-w-[150px]">NOORUN ALA NOOR</h1>
+                    <p id="app-header-subtitle" class="text-[10px] text-slate-500 font-medium uppercase tracking-wider truncate max-w-[150px]">MADRASA TRACKER</p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 relative">
                 <!-- Mode Switcher -->
                 <div class="flex items-center justify-center">
                     <label for="mode-toggle" class="flex items-center cursor-pointer">
@@ -65,79 +71,70 @@
                     </label>
                 </div>
                 
-                <!-- Menu Button -->
-                <button onclick="toggleMenu()" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 bg-slate-100 rounded-md">
+                <!-- Menu Button (Hamburger) -->
+                <button onclick="toggleMenu()" id="menu-btn" class="text-slate-700 hover:text-[#0f172a] focus:outline-none p-2 bg-slate-100 rounded-md transition-colors relative z-50">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Global Class Selector (Sticky below header) -->
-    <div id="class-selector-container" class="fixed top-[65px] w-full z-30 bg-white/90 backdrop-blur-sm border-b border-slate-200 shadow-sm hidden">
+    <!-- Global Class Selector -->
+    <div id="class-selector-container" class="fixed top-[65px] w-full z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm hidden">
         <div class="max-w-md mx-auto px-4 py-2 flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase">Selected Class:</span>
-            <select id="global-class-selector" onchange="changeGlobalClass(this.value)" class="bg-slate-100 border-none text-sm font-bold text-[#0f172a] rounded-md px-3 py-1 focus:ring-0 cursor-pointer">
+            <span class="text-xs font-semibold text-slate-500 uppercase"><i class="fas fa-chalkboard text-blue-500 mr-1"></i> Class:</span>
+            <select id="global-class-selector" onchange="changeGlobalClass(this.value)" class="bg-slate-100 border-none text-sm font-bold text-[#0f172a] rounded-md px-3 py-1 focus:ring-0 cursor-pointer outline-none">
                 <!-- Options populated dynamically -->
             </select>
         </div>
     </div>
 
-    <!-- Dropdown Menu (Sidebar style) -->
-    <div id="side-menu" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="toggleMenu()"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-64 bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="menu-panel">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-[#f8fafc]">
-                <h2 class="font-bold text-slate-800" id="menu-title">Menu</h2>
-                <button onclick="toggleMenu()" class="p-2 text-slate-500 hover:text-slate-800"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <!-- User Menu Links -->
-            <nav id="menu-user" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <a href="#" onclick="navigate('view-home'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-blue-50 rounded-lg font-medium transition-colors"><i class="fas fa-home w-5 text-blue-500"></i> Today's Classes</a>
-                <a href="#" onclick="navigate('view-tracker'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-green-50 rounded-lg font-medium transition-colors"><i class="fas fa-clipboard-check w-5 text-green-500"></i> Daily Tracker</a>
-                <a href="#" onclick="navigate('view-syllabus'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-purple-50 rounded-lg font-medium transition-colors"><i class="fas fa-book-open w-5 text-purple-500"></i> Syllabus Progress</a>
-            </nav>
+    <!-- Dropdown Menu Overlay & Box -->
+    <div id="menu-overlay" class="fixed inset-0 z-40 hidden bg-slate-900/10 backdrop-blur-[1px]" onclick="toggleMenu()"></div>
+    
+    <div id="dropdown-menu" class="fixed top-[65px] right-4 w-56 bg-white rounded-2xl shadow-2xl z-50 transform origin-top-right transition-all duration-200 scale-0 opacity-0 flex flex-col border border-slate-100 overflow-hidden">
+        
+        <!-- User Menu Links -->
+        <nav id="menu-user" class="p-2 space-y-1">
+            <a href="#" onclick="navigate('view-home');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-home w-5 text-blue-500 text-center"></i> Today's Classes</a>
+            <a href="#" onclick="navigate('view-attendance');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-user-check w-5 text-emerald-500 text-center"></i> Attendance</a>
+            <a href="#" onclick="navigate('view-tracker');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-clipboard-question w-5 text-indigo-500 text-center"></i> Q&A Tracker</a>
+            <a href="#" onclick="navigate('view-tasks-eval');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-star w-5 text-amber-500 text-center"></i> Task Evaluator</a>
+            <a href="#" onclick="navigate('view-syllabus');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-book-open w-5 text-purple-500 text-center"></i> Syllabus Planner</a>
+            <a href="#" onclick="navigate('view-reports');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm border-t border-slate-100 mt-2"><i class="fas fa-chart-pie w-5 text-pink-500 text-center"></i> Student Reports</a>
+        </nav>
 
-            <!-- Admin Menu Links -->
-            <nav id="menu-admin" class="flex-1 overflow-y-auto p-4 space-y-2 hidden">
-                <div class="text-xs font-bold text-slate-400 uppercase mb-2 px-3">Administration</div>
-                <a href="#" onclick="navigate('view-admin-setup'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-cogs w-5 text-slate-600"></i> Global App Setup</a>
-                <a href="#" onclick="navigate('view-admin-students'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-users w-5 text-slate-600"></i> Manage Students</a>
-                <a href="#" onclick="navigate('view-admin-timetable'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-calendar-alt w-5 text-slate-600"></i> Timetable Editor</a>
-                <a href="#" onclick="navigate('view-admin-syllabus'); toggleMenu();" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-100 rounded-lg font-medium transition-colors"><i class="fas fa-tasks w-5 text-slate-600"></i> Syllabus Targets</a>
-            </nav>
-            
-            <div class="p-4 border-t border-slate-100 text-center text-xs text-slate-400">
-                v2.0 - Authored by AI
-            </div>
-        </div>
+        <!-- Admin Menu Links -->
+        <nav id="menu-admin" class="p-2 space-y-1 hidden">
+            <div class="text-[10px] font-bold text-slate-400 uppercase mb-1 px-3 mt-1 tracking-wider">Administration</div>
+            <a href="#" onclick="navigate('view-admin-setup');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-cogs w-5 text-slate-600 text-center"></i> Global Setup</a>
+            <a href="#" onclick="navigate('view-admin-students');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-users w-5 text-slate-600 text-center"></i> Manage Students</a>
+            <a href="#" onclick="navigate('view-admin-timetable');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-calendar-alt w-5 text-slate-600 text-center"></i> Timetable Editor</a>
+            <a href="#" onclick="navigate('view-admin-tasks');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-tasks w-5 text-slate-600 text-center"></i> Task Builder</a>
+            <a href="#" onclick="navigate('view-admin-syllabus');" class="flex items-center gap-3 p-3 text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-colors text-sm"><i class="fas fa-chart-line w-5 text-slate-600 text-center"></i> Syllabus Targets</a>
+        </nav>
     </div>
 
     <!-- Main Content Area -->
-    <main class="max-w-md mx-auto pt-32 pb-20 px-4 min-h-screen relative" id="main-container">
+    <main class="max-w-md mx-auto pt-[120px] pb-24 px-4 min-h-screen relative" id="main-container">
         
-        <!-- Loading State -->
         <div id="loading-overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#f8fafc]">
             <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
-            <p class="text-slate-500 text-sm font-medium animate-pulse">Connecting to server...</p>
+            <p class="text-slate-500 text-sm font-medium animate-pulse" id="loading-text">Connecting to Server...</p>
         </div>
 
         <!-- ==================== USER VIEWS ==================== -->
         
-        <!-- View: Home (Today's Timetable) -->
+        <!-- View: Home -->
         <div id="view-home" class="app-view hidden">
             <div class="flex justify-between items-end mb-6">
                 <div>
                     <h2 class="text-2xl font-bold text-[#0f172a]" id="home-day-title">Today</h2>
                     <p class="text-sm text-slate-500" id="home-date-subtitle">Loading...</p>
                 </div>
-                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold" id="home-class-badge">Class --</div>
             </div>
             
-            <div id="home-timetable-container" class="space-y-4">
-                <!-- Timetable cards injected here -->
-            </div>
+            <div id="home-timetable-container" class="space-y-4"></div>
             
             <div id="home-empty-state" class="hidden text-center py-10 bg-white rounded-2xl shadow-sm border border-slate-100 mt-4">
                 <i class="fas fa-mug-hot text-4xl text-slate-300 mb-3"></i>
@@ -146,47 +143,141 @@
             </div>
         </div>
 
-        <!-- View: Tracker (Daily Assessment) -->
-        <div id="view-tracker" class="app-view hidden">
-            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Daily Tracker</h2>
-            <p class="text-sm text-slate-500 mb-6">Select a subject to mark student assessment.</p>
-
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Subject</label>
-                <select id="tracker-subject-select" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
-                    <option value="">-- Choose Subject --</option>
-                </select>
+        <!-- View: Attendance -->
+        <div id="view-attendance" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Daily Attendance</h2>
+            
+            <div class="flex items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <i class="fas fa-calendar-day text-emerald-500"></i>
+                <input type="date" id="attendance-date" class="bg-transparent border-none outline-none font-bold text-slate-700 text-sm flex-1" onchange="loadAttendance()">
             </div>
 
-            <div id="tracker-students-list" class="space-y-3 mt-6">
-                <!-- Student list injected here -->
-            </div>
-            <div class="mt-8">
-                <button onclick="saveDailyTracking()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
-                    <i class="fas fa-save"></i> Save Tracking Data
+            <div id="attendance-students-list" class="space-y-3"></div>
+            
+            <div class="mt-8 sticky bottom-4 z-10">
+                <button onclick="saveAttendance()" class="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-emerald-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Attendance
                 </button>
             </div>
         </div>
 
-        <!-- View: Syllabus Progress -->
-        <div id="view-syllabus" class="app-view hidden">
-            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Syllabus Progress</h2>
-            <p class="text-sm text-slate-500 mb-6">Track completion of lessons across subjects.</p>
+        <!-- View: Daily Tracker (Q&A) -->
+        <div id="view-tracker" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Q&A Tracker</h2>
+            <p class="text-sm text-slate-500 mb-4">Select a subject to track questions asked in class.</p>
 
             <div class="mb-4">
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month</label>
-                <select id="progress-month-select" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
-                    <!-- Populated dynamically based on calendar type -->
+                <select id="tracker-subject-select" onchange="loadTrackerStudents()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-medium appearance-none">
+                    <option value="">-- Choose Subject --</option>
                 </select>
             </div>
 
-            <div id="progress-subjects-list" class="space-y-4 mt-6">
-                <!-- Progress cards injected here -->
-            </div>
-            <div class="mt-8">
-                <button onclick="saveSyllabusProgress()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
-                    <i class="fas fa-check-circle"></i> Update Progress
+            <div id="tracker-students-list" class="space-y-3 mt-4"></div>
+            
+            <div class="mt-8 sticky bottom-4 z-10">
+                <button onclick="saveDailyTracking()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-indigo-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Save Tracking
                 </button>
+            </div>
+        </div>
+
+        <!-- View: Task Evaluator -->
+        <div id="view-tasks-eval" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Task Evaluator</h2>
+            <p class="text-sm text-slate-500 mb-4">Evaluate students for specific tasks (e.g., Namaz, Uniform).</p>
+
+            <div id="eval-task-container" class="mb-6"></div>
+
+            <div id="eval-students-list" class="space-y-3"></div>
+
+            <div class="mt-8 sticky bottom-4 z-10">
+                <button onclick="saveTaskEvaluations()" class="w-full bg-amber-500 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-amber-600 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-check-double"></i> Submit Evaluations
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Syllabus Planner -->
+        <div id="view-syllabus" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Syllabus Planner</h2>
+            <p class="text-sm text-slate-500 mb-6">Update completed lessons for all subjects below.</p>
+
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month</label>
+                <select id="user-syllabus-month" onchange="loadUserSyllabus()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-medium appearance-none"></select>
+            </div>
+
+            <div id="user-syllabus-list-container" class="space-y-4"></div>
+
+            <div class="mt-8 sticky bottom-4 z-10">
+                <button onclick="saveUserSyllabus()" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl shadow-xl hover:bg-purple-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-sync-alt"></i> Update Syllabus Progress
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Student Reports -->
+        <div id="view-reports" class="app-view hidden">
+            <h2 class="text-xl font-bold text-[#0f172a] mb-2">Student Reports</h2>
+            <p class="text-sm text-slate-500 mb-6">View consolidated performance for a student.</p>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Student</label>
+                    <select id="report-student-select" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-pink-500 font-medium appearance-none">
+                        <option value="">-- Choose Student --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month</label>
+                    <select id="report-month-select" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-pink-500 font-medium appearance-none"></select>
+                </div>
+                <button onclick="loadStudentReport()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow hover:bg-slate-900 transition-colors flex justify-center items-center gap-2">
+                    <i class="fas fa-search"></i> Generate Report
+                </button>
+            </div>
+
+            <div id="report-results-container" class="space-y-4 hidden mt-8">
+                <!-- Attendance Stats -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-user-check text-emerald-500 mr-2"></i>Attendance</h3>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                            <div class="text-2xl font-black text-emerald-600" id="rep-att-p">0</div>
+                            <div class="text-[10px] font-bold text-emerald-600 uppercase mt-1">Present</div>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-xl border border-red-100">
+                            <div class="text-2xl font-black text-red-600" id="rep-att-a">0</div>
+                            <div class="text-[10px] font-bold text-red-600 uppercase mt-1">Absent</div>
+                        </div>
+                        <div class="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                            <div class="text-2xl font-black text-amber-600" id="rep-att-l">0</div>
+                            <div class="text-[10px] font-bold text-amber-600 uppercase mt-1">Leave</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Stats -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-star text-amber-500 mr-2"></i>Task Performance</h3>
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-slate-600 font-medium">Total Points Earned:</div>
+                        <div class="text-3xl font-black text-amber-500" id="rep-task-pts">0</div>
+                    </div>
+                </div>
+
+                <!-- Tracker Stats -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b pb-2"><i class="fas fa-clipboard-question text-indigo-500 mr-2"></i>Q&A Tracker</h3>
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-slate-600 font-medium">Questions Asked (Days):</div>
+                        <div class="text-3xl font-black text-indigo-500" id="rep-track-count">0</div>
+                    </div>
+                </div>
+            </div>
+            <div id="report-empty" class="text-center py-10 hidden">
+                <i class="fas fa-chart-line text-4xl text-slate-200 mb-3"></i>
+                <p class="text-sm text-slate-400">Select a student and month to view their performance report.</p>
             </div>
         </div>
 
@@ -196,28 +287,22 @@
         <div id="view-admin-setup" class="app-view hidden">
             <div class="flex items-center gap-2 mb-6">
                 <i class="fas fa-cogs text-xl text-slate-400"></i>
-                <h2 class="text-xl font-bold text-[#0f172a]">Global App Setup</h2>
+                <h2 class="text-xl font-bold text-[#0f172a]">Global Setup</h2>
             </div>
             
-            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl text-sm mb-6 flex gap-3 shadow-sm">
-                <i class="fas fa-exclamation-triangle mt-1"></i>
-                <div>Changes made here will affect the entire application structure. Please configure carefully.</div>
-            </div>
-
-            <!-- Institution Details -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
                 <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Institution Details</h3>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Institution Name</label>
-                        <input type="text" id="setup-inst-name" placeholder="e.g. Noorun Ala Noor" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                        <input type="text" id="setup-inst-name" placeholder="e.g. Noorun Ala Noor" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm font-medium">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Subtitle / Location</label>
-                        <input type="text" id="setup-inst-sub" placeholder="e.g. Madrasa Tracker" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                        <input type="text" id="setup-inst-sub" placeholder="e.g. Madrasa Tracker" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm font-medium">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Logo (Square, Max 200KB)</label>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Logo (Square Crop)</label>
                         <div class="flex items-center gap-4">
                             <div class="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative">
                                 <img id="setup-logo-preview" src="" class="w-full h-full object-cover hidden">
@@ -225,8 +310,8 @@
                             </div>
                             <div class="flex flex-col gap-2 flex-1">
                                 <input type="file" id="setup-inst-logo" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">
-                                <button onclick="document.getElementById('setup-inst-logo').click()" class="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 w-full text-center transition-colors"><i class="fas fa-upload mr-1"></i> Upload / Update</button>
-                                <button id="btn-remove-logo" onclick="removeLogo()" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-100 w-full text-center transition-colors hidden"><i class="fas fa-trash mr-1"></i> Remove Logo</button>
+                                <button onclick="document.getElementById('setup-inst-logo').click()" class="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-100 w-full text-center transition-colors"><i class="fas fa-upload mr-1"></i> Upload Logo</button>
+                                <button id="btn-remove-logo" onclick="removeLogo()" class="bg-red-50 text-red-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-red-100 w-full text-center transition-colors hidden"><i class="fas fa-trash mr-1"></i> Remove</button>
                             </div>
                         </div>
                         <input type="hidden" id="setup-logo-base64">
@@ -239,132 +324,151 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Calendar Type</label>
-                        <select id="setup-cal-type" onchange="updateSetupMonths()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500">
+                        <select id="setup-cal-type" onchange="updateSetupMonths()" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm font-medium">
                             <option value="english">English (Gregorian)</option>
                             <option value="arabic">Arabic (Hijri)</option>
                         </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Start Month</label>
-                            <select id="setup-cal-start" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">End Month</label>
-                            <select id="setup-cal-end" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"></select>
-                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6">
                 <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
-                    Classes 
-                    <button onclick="adminAddClass()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 font-bold transition-colors"><i class="fas fa-plus"></i> Add Class</button>
+                    Classes Setup
+                    <button onclick="adminAddClass()" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-bold hover:bg-blue-200 shadow-sm"><i class="fas fa-plus mr-1"></i>Add Class</button>
                 </h3>
-                <div id="setup-classes-container" class="space-y-6">
-                    <!-- Class configs injected here -->
-                </div>
+                <div id="setup-classes-container" class="space-y-6"></div>
             </div>
 
-            <button onclick="saveGlobalSetup()" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-green-700 transition-colors transform active:scale-95 flex justify-center items-center gap-2 mb-10">
-                <i class="fas fa-save"></i> Save Global Configuration
+            <button onclick="saveGlobalSetup()" class="w-full bg-[#0f172a] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-colors transform active:scale-95 flex justify-center items-center gap-2 mb-10">
+                <i class="fas fa-save"></i> Save Global Config
             </button>
         </div>
 
         <!-- View: Admin - Manage Students -->
         <div id="view-admin-students" class="app-view hidden">
-            <div class="flex items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-6">
                 <i class="fas fa-users text-xl text-slate-400"></i>
                 <h2 class="text-xl font-bold text-[#0f172a]">Manage Students</h2>
             </div>
-            <p class="text-sm text-slate-500 mb-6">Add or edit students for the currently selected class.</p>
-
+            
             <div id="admin-students-content">
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
                     <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Student</h3>
                     <div class="flex gap-2">
-                        <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm">
-                        <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-slate-800 transition-colors whitespace-nowrap">Add</button>
+                        <input type="text" id="new-student-name" placeholder="Student Full Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm font-medium">
+                        <button onclick="adminAddStudent()" class="bg-[#0f172a] text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-slate-800 shadow-sm">Add</button>
                     </div>
                 </div>
-
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div class="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500 uppercase">
                         <span>Roll / Name</span>
                         <span>Action</span>
                     </div>
-                    <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto">
-                        <!-- Students list injected here -->
-                    </div>
+                    <div id="admin-students-list" class="divide-y divide-slate-100 max-h-[60vh] overflow-y-auto"></div>
                 </div>
+            </div>
+            <div id="admin-students-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class from the top menu first.</p>
             </div>
         </div>
 
         <!-- View: Admin - Timetable Editor -->
         <div id="view-admin-timetable" class="app-view hidden">
-            <div class="flex items-center gap-2 mb-2">
+            <div class="flex items-center gap-2 mb-6">
                 <i class="fas fa-calendar-alt text-xl text-slate-400"></i>
                 <h2 class="text-xl font-bold text-[#0f172a]">Timetable Editor</h2>
             </div>
-            <p class="text-sm text-slate-500 mb-6">Configure periods and subjects for each day.</p>
 
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Day</label>
-                <select id="admin-timetable-day" onchange="renderAdminTimetableForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
-                    <option value="Sunday">Sunday</option>
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Saturday">Saturday</option>
-                </select>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between" id="admin-timetable-day-title">
-                    Configure Day
-                </h3>
-                <div id="admin-timetable-periods" class="space-y-4">
-                    <!-- Period inputs injected here based on class config -->
+            <div id="admin-timetable-content">
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Day</label>
+                    <select id="admin-timetable-day" onchange="renderAdminTimetableForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 font-medium appearance-none">
+                        <option value="Sunday">Sunday</option><option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option><option value="Saturday">Saturday</option>
+                    </select>
                 </div>
-                <div class="mt-6">
-                    <button onclick="saveAdminTimetable()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors flex justify-center items-center gap-2">
-                        <i class="fas fa-save"></i> Save Timetable for Day
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div id="admin-timetable-periods" class="space-y-4"></div>
+                    <button onclick="saveAdminTimetable()" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 flex justify-center items-center gap-2 transition-colors">
+                        <i class="fas fa-save"></i> Save Timetable
                     </button>
                 </div>
+            </div>
+            <div id="admin-timetable-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class first.</p>
+            </div>
+        </div>
+
+        <!-- View: Admin - Task Builder -->
+        <div id="view-admin-tasks" class="app-view hidden">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-tasks text-xl text-slate-400"></i>
+                <h2 class="text-xl font-bold text-[#0f172a]">Task Builder</h2>
+            </div>
+            <p class="text-xs text-slate-500 mb-6">Create daily evaluation tasks (e.g., Namaz, Reading).</p>
+
+            <div id="admin-tasks-content">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                    <h3 class="font-bold text-sm text-slate-700 mb-3">Add New Task</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="new-task-title" placeholder="e.g. 5 Times Salah" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500 font-medium">
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Points Value</label>
+                                <input type="number" id="new-task-points" value="5" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500">
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="adminAddTask()" class="bg-[#0f172a] text-white px-5 py-2 rounded-lg font-medium text-sm h-[38px] hover:bg-slate-800 shadow-sm">Create</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="admin-tasks-list" class="space-y-3"></div>
+            </div>
+            <div id="admin-tasks-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class first.</p>
             </div>
         </div>
 
         <!-- View: Admin - Syllabus Targets -->
         <div id="view-admin-syllabus" class="app-view hidden">
-            <div class="flex items-center gap-2 mb-2">
-                <i class="fas fa-tasks text-xl text-slate-400"></i>
+            <div class="flex items-center gap-2 mb-6">
+                <i class="fas fa-chart-line text-xl text-slate-400"></i>
                 <h2 class="text-xl font-bold text-[#0f172a]">Syllabus Targets</h2>
             </div>
-            <p class="text-sm text-slate-500 mb-6">Set target lesson numbers for each subject per month.</p>
 
-            <div class="mb-4">
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month to Configure</label>
-                <select id="admin-syllabus-month" onchange="renderAdminSyllabusForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all font-medium appearance-none">
-                    <!-- Months populated based on config -->
-                </select>
-            </div>
-
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2">Target Lesson Numbers</h3>
-                <div id="admin-syllabus-subjects" class="space-y-4">
-                    <!-- Subject inputs injected here based on class config -->
+            <div id="admin-syllabus-content">
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Month to Configure</label>
+                    <select id="admin-syllabus-month" onchange="renderAdminSyllabusForm()" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 font-medium appearance-none"></select>
                 </div>
-                <div class="mt-6">
-                    <button onclick="saveAdminSyllabus()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-colors flex justify-center items-center gap-2">
-                        <i class="fas fa-save"></i> Save Targets for Month
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <div id="admin-syllabus-subjects" class="space-y-4"></div>
+                    <button onclick="saveAdminSyllabus()" class="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-md hover:bg-slate-900 flex justify-center items-center gap-2 transition-colors">
+                        <i class="fas fa-save"></i> Save Targets
                     </button>
                 </div>
+            </div>
+            <div id="admin-syllabus-empty" class="hidden text-center py-10">
+                <p class="text-sm text-slate-500">Please select a class first.</p>
             </div>
         </div>
 
     </main>
+
+    <!-- Leave Reason Modal -->
+    <div id="leave-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeLeaveModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 transform scale-95 transition-transform duration-200" id="leave-content">
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Leave Reason</h3>
+            <p class="text-xs text-slate-500 mb-4">Please specify why the student is absent.</p>
+            <input type="text" id="leave-reason-input" placeholder="e.g. Fever, Traveling" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-sm outline-none focus:border-amber-500 mb-6 font-medium">
+            <div class="flex gap-3">
+                <button onclick="closeLeaveModal()" class="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onclick="confirmLeaveReason()" class="flex-1 bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition-colors shadow-md">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Image Cropper Modal -->
     <div id="cropper-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
@@ -377,14 +481,14 @@
                 <img id="cropper-image" src="" class="block max-w-full">
             </div>
             <div class="mt-4 flex gap-3">
-                <button onclick="closeCropper()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onclick="applyCrop()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"><i class="fas fa-crop-alt mr-1"></i> Apply & Compress</button>
+                <button onclick="closeCropper()" class="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold transition-colors hover:bg-slate-200">Cancel</button>
+                <button onclick="applyCrop()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold transition-colors hover:bg-blue-700 shadow-md">Apply Crop</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Alert Modal -->
-    <div id="alert-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+    <!-- Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAlert()"></div>
         <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full relative z-10 transform scale-95 transition-transform duration-200" id="alert-content">
             <div class="text-center">
@@ -398,14 +502,11 @@
         </div>
     </div>
 
-    <!-- Application Logic -->
     <script type="module">
-        // --- 1. Firebase Initialization & Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Your specific Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAfJSonmGHnf0t92B71ycuAZbc-CV3k7LE",
             authDomain: "fest-dsd-003.firebaseapp.com",
@@ -415,129 +516,141 @@
             appId: "1:409596394273:web:b930012ce0a845ddb45c60",
             measurementId: "G-WSPJPQR032"
         };
-        const appId = 'madrasa_tracker_v1'; // Fixed app ID for storage
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         let currentUser = null;
 
-        // Constants
         const ENGLISH_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
         const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-        // --- 2. Auth & Initialization ---
+        const getPublicRef = (colName) => collection(db, 'madrasa', 'public', 'data', colName);
+        const getDocRef = (type, id) => doc(db, 'madrasa', 'public', 'data', type, id);
+
         async function initApp() {
-            showLoading(true);
-            try {
-                // We use anonymous sign-in to securely read/write based on our rules
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Auth Error:", error);
-                showAlert("Authentication Failed", "Please enable Anonymous Authentication in Firebase Console.", "error");
+            showLoading(true, "Connecting to Server...");
+            try { 
+                await signInAnonymously(auth); 
+                // Rest of the flow continues in onAuthStateChanged
+            } 
+            catch (error) { 
+                console.error("Auth Error:", error); 
                 showLoading(false);
+                showAlert("Connection Error", "Failed to connect to Firebase. Please check if Anonymous Sign-in is enabled in Firebase Console and your domain is whitelisted.", "error"); 
             }
         }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                await loadGlobalConfig();
-                updateHeaderUI();
-                setupGlobalClassSelector();
-                updateUIForMode();
-                showLoading(false);
+                try {
+                    showLoading(true, "Loading Configuration...");
+                    await loadGlobalConfig();
+                    setupGlobalClassSelector();
+                    updateUIForMode();
+                } catch(e) {
+                    console.error("DB Error:", e);
+                    showAlert("Database Error", "Failed to fetch data from Firestore. Check your security rules.", "error");
+                } finally {
+                    showLoading(false);
+                }
             }
         });
-
-        // Initialize immediately
         initApp();
 
-        // --- STREAMING_CHUNK:Setting up Global Navigation and UI Helpers... ---
-        // --- 3. UI Helpers & Navigation ---
         window.toggleMenu = function() {
-            const menu = document.getElementById('side-menu');
-            const panel = document.getElementById('menu-panel');
-            if (menu.classList.contains('hidden')) {
-                menu.classList.remove('hidden');
-                setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+            const menu = document.getElementById('dropdown-menu');
+            const overlay = document.getElementById('menu-overlay');
+            if (menu.classList.contains('scale-0')) {
+                overlay.classList.remove('hidden');
+                menu.classList.remove('scale-0', 'opacity-0');
+                menu.classList.add('scale-100', 'opacity-100');
             } else {
-                panel.classList.add('translate-x-full');
-                setTimeout(() => menu.classList.add('hidden'), 300);
+                menu.classList.remove('scale-100', 'opacity-100');
+                menu.classList.add('scale-0', 'opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 200);
             }
         };
 
         window.navigate = function(viewId) {
+            const menu = document.getElementById('dropdown-menu');
+            if(menu && !menu.classList.contains('scale-0')) toggleMenu();
+            
             document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
             document.getElementById(viewId).classList.remove('hidden');
             AppState.currentView = viewId;
             
-            // Route handlers
-            if(!AppState.currentClassId && viewId !== 'view-admin-setup') {
-                showAlert("Setup Required", "Please configure classes in Global Setup first.", "warning");
+            if(!AppState.currentClassId && viewId.startsWith('view-admin') && viewId !== 'view-admin-setup') {
+                document.getElementById(viewId.replace('view-', '') + '-content').classList.add('hidden');
+                document.getElementById(viewId.replace('view-', '') + '-empty').classList.remove('hidden');
                 return;
+            } else if (viewId.startsWith('view-admin') && viewId !== 'view-admin-setup') {
+                const cId = viewId.replace('view-', '') + '-content';
+                const eId = viewId.replace('view-', '') + '-empty';
+                if(document.getElementById(cId)) document.getElementById(cId).classList.remove('hidden');
+                if(document.getElementById(eId)) document.getElementById(eId).classList.add('hidden');
             }
 
             if(viewId === 'view-home') renderHomeView();
-            if(viewId === 'view-tracker') renderTrackerView();
-            if(viewId === 'view-syllabus') renderSyllabusView();
+            if(viewId === 'view-attendance') initAttendanceView();
+            if(viewId === 'view-tasks-eval') initTaskEvalView();
+            if(viewId === 'view-tracker') initTrackerView();
+            if(viewId === 'view-syllabus') initSyllabusView();
+            if(viewId === 'view-reports') renderReportsView();
+            
             if(viewId === 'view-admin-setup') renderAdminSetup();
             if(viewId === 'view-admin-students') renderAdminStudents();
             if(viewId === 'view-admin-timetable') renderAdminTimetableForm();
+            if(viewId === 'view-admin-tasks') renderAdminTasks();
             if(viewId === 'view-admin-syllabus') renderAdminSyllabusForm();
         };
 
         window.toggleAppMode = function(isAdmin) {
             AppState.mode = isAdmin ? 'admin' : 'user';
-            
             const dot = document.getElementById('toggle-dot');
             const bg = document.getElementById('toggle-bg');
             const icon = document.getElementById('toggle-icon');
             
             if(isAdmin) {
                 dot.classList.add('translate-x-6');
-                bg.classList.replace('bg-slate-200', 'bg-blue-600');
-                icon.className = 'fas fa-shield-alt text-xs text-blue-600';
+                bg.classList.replace('bg-slate-200', 'bg-[#0f172a]');
+                icon.className = 'fas fa-shield-alt text-xs text-[#0f172a]';
             } else {
                 dot.classList.remove('translate-x-6');
-                bg.classList.replace('bg-blue-600', 'bg-slate-200');
+                bg.classList.replace('bg-[#0f172a]', 'bg-slate-200');
                 icon.className = 'fas fa-user text-xs text-slate-500';
             }
-
             updateUIForMode();
+            const menu = document.getElementById('dropdown-menu');
+            if(menu && !menu.classList.contains('scale-0')) toggleMenu();
         };
 
         function updateUIForMode() {
-            const adminMenu = document.getElementById('menu-admin');
-            const userMenu = document.getElementById('menu-user');
-            const classSelector = document.getElementById('class-selector-container');
-            const menuTitle = document.getElementById('menu-title');
-
             if (AppState.mode === 'admin') {
-                adminMenu.classList.remove('hidden');
-                userMenu.classList.add('hidden');
-                classSelector.classList.remove('hidden'); 
-                menuTitle.innerText = "Admin Panel";
-                navigate('view-admin-setup'); 
+                document.getElementById('menu-admin').classList.remove('hidden');
+                document.getElementById('menu-user').classList.add('hidden');
+                document.getElementById('class-selector-container').classList.remove('hidden'); 
+                navigate('view-admin-setup');
             } else {
-                adminMenu.classList.add('hidden');
-                userMenu.classList.remove('hidden');
-                
-                if (!AppState.config || !AppState.config.classes || AppState.config.classes.length === 0) {
-                    showAlert("App Not Configured", "Please switch to Admin mode to setup classes.", "warning");
-                    classSelector.classList.add('hidden');
+                document.getElementById('menu-admin').classList.add('hidden');
+                document.getElementById('menu-user').classList.remove('hidden');
+                if (!AppState.config.classes || AppState.config.classes.length === 0) {
+                    showAlert("Welcome!", "Please switch to Admin mode to setup classes.", "info");
+                    document.getElementById('class-selector-container').classList.add('hidden');
                 } else {
-                    classSelector.classList.remove('hidden');
+                    document.getElementById('class-selector-container').classList.remove('hidden');
                     navigate('view-home');
                 }
-                menuTitle.innerText = "Menu";
             }
         }
 
-        window.changeGlobalClass = function(classId) {
+        window.changeGlobalClass = async function(classId) {
             AppState.currentClassId = classId;
-            navigate(AppState.currentView);
+            await loadClassDependencies();
+            if(!document.getElementById(AppState.currentView).classList.contains('hidden')){
+                navigate(AppState.currentView); 
+            }
         };
 
         function setupGlobalClassSelector() {
@@ -545,20 +658,19 @@
             selector.innerHTML = '';
             
             if (AppState.config && AppState.config.classes && AppState.config.classes.length > 0) {
-                AppState.config.classes.forEach(cls => {
-                    const opt = document.createElement('option');
-                    opt.value = cls.id;
-                    opt.textContent = cls.name;
-                    selector.appendChild(opt);
-                });
-                if (!AppState.currentClassId) {
+                if (!AppState.currentClassId || !AppState.config.classes.find(c=>c.id===AppState.currentClassId)) {
                     AppState.currentClassId = AppState.config.classes[0].id;
                 }
+                AppState.config.classes.forEach(cls => {
+                    selector.add(new Option(cls.name, cls.id));
+                });
                 selector.value = AppState.currentClassId;
                 document.getElementById('class-selector-container').classList.remove('hidden');
+                loadClassDependencies();
             } else {
                 document.getElementById('class-selector-container').classList.add('hidden');
             }
+            updateHeaderUI();
         }
 
         function getCurrentClassConfig() {
@@ -566,869 +678,676 @@
             return AppState.config.classes.find(c => c.id === AppState.currentClassId) || null;
         }
 
-        function getActiveMonthsList() {
-            if (!AppState.config) return ENGLISH_MONTHS;
-            return AppState.config.calendarType === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
-        }
+        function updateHeaderUI() {
+            const conf = AppState.config;
+            document.getElementById('app-header-title').innerText = conf.instName || 'NOORUN ALA NOOR';
+            document.getElementById('app-header-subtitle').innerText = conf.instSubtitle || 'MADRASA TRACKER';
 
-        window.updateHeaderUI = function() {
-            const config = AppState.config || {};
-            
-            const titleEl = document.getElementById('app-header-title');
-            const subEl = document.getElementById('app-header-subtitle');
             const logoEl = document.getElementById('app-header-logo');
             const fallbackEl = document.getElementById('app-logo-fallback');
             const containerEl = document.getElementById('app-logo-container');
 
-            titleEl.innerText = config.instName || 'NOORUN ALA NOOR';
-            subEl.innerText = config.instSubtitle || 'MADRASA TRACKER';
-
-            if (config.instLogo) {
-                logoEl.src = config.instLogo;
+            if (conf.instLogo) {
+                logoEl.src = conf.instLogo;
                 logoEl.classList.remove('hidden');
                 fallbackEl.classList.add('hidden');
                 containerEl.classList.replace('bg-[#f4eadd]', 'bg-white');
                 containerEl.classList.replace('border-[#e5d5c5]', 'border-slate-200');
             } else {
-                logoEl.src = '';
                 logoEl.classList.add('hidden');
                 fallbackEl.classList.remove('hidden');
                 containerEl.classList.replace('bg-white', 'bg-[#f4eadd]');
                 containerEl.classList.replace('border-slate-200', 'border-[#e5d5c5]');
             }
-        };
+        }
 
-        // --- Custom Alert ---
+        function getActiveMonthsList() {
+            return AppState.config.calendarType === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
+        }
+
         window.showAlert = function(title, message, type="info") {
             document.getElementById('alert-title').innerText = title;
             document.getElementById('alert-message').innerText = message;
-            
-            const iconContainer = document.getElementById('alert-icon-container');
+            const iconC = document.getElementById('alert-icon-container');
             const icon = document.getElementById('alert-icon');
-            iconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4";
-            
-            if (type === 'success') {
-                iconContainer.classList.add('bg-green-100', 'text-green-600');
-                icon.className = "fas fa-check text-3xl";
-            } else if (type === 'error') {
-                iconContainer.classList.add('bg-red-100', 'text-red-600');
-                icon.className = "fas fa-times text-3xl";
-            } else if (type === 'warning') {
-                iconContainer.classList.add('bg-yellow-100', 'text-yellow-600');
-                icon.className = "fas fa-exclamation-triangle text-3xl";
-            } else {
-                iconContainer.classList.add('bg-blue-100', 'text-blue-600');
-                icon.className = "fas fa-info text-3xl";
-            }
-            
+            iconC.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4";
+            if (type === 'success') { iconC.classList.add('bg-green-100', 'text-green-600'); icon.className = "fas fa-check text-3xl"; }
+            else if (type === 'error') { iconC.classList.add('bg-red-100', 'text-red-600'); icon.className = "fas fa-times text-3xl"; }
+            else if (type === 'warning') { iconC.classList.add('bg-amber-100', 'text-amber-600'); icon.className = "fas fa-exclamation-triangle text-3xl"; }
+            else { iconC.classList.add('bg-blue-100', 'text-blue-600'); icon.className = "fas fa-info text-3xl"; }
             const modal = document.getElementById('alert-modal');
             modal.classList.remove('hidden');
             setTimeout(() => document.getElementById('alert-content').classList.remove('scale-95'), 10);
         };
-
+        
         window.closeAlert = function() {
             document.getElementById('alert-content').classList.add('scale-95');
             setTimeout(() => document.getElementById('alert-modal').classList.add('hidden'), 200);
         };
-
-        function showLoading(show) {
-            const el = document.getElementById('loading-overlay');
-            if (show) el.classList.remove('hidden');
-            else el.classList.add('hidden');
+        
+        function showLoading(show, text="Connecting to Server...") { 
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').classList.toggle('hidden', !show); 
         }
-
-        // --- STREAMING_CHUNK:Setting up Database Helpers... ---
-        // --- 4. Database Operations ---
-        const getPublicRef = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
-        const getConfigDoc = () => doc(db, 'artifacts', appId, 'public', 'data', 'config', 'global');
-        const getTimetableDoc = (classId) => doc(db, 'artifacts', appId, 'public', 'data', 'config', `timetable_${classId}`);
-        const getSyllabusDoc = (classId) => doc(db, 'artifacts', appId, 'public', 'data', 'config', `syllabus_${classId}`);
 
         async function loadGlobalConfig() {
-            if (!currentUser) return;
-            try {
-                const docSnap = await getDoc(getConfigDoc());
-                if (docSnap.exists()) {
-                    AppState.config = docSnap.data();
-                } else {
-                    AppState.config = { classes: [], calendarType: 'english', startMonth: 'January', endMonth: 'December' };
-                }
-            } catch (e) {
-                console.error("Error loading config", e);
-            }
+            const snap = await getDoc(getDocRef('config', 'global'));
+            AppState.config = snap.exists() ? snap.data() : { classes: [], calendarType: 'english' };
         }
 
-        // --- STREAMING_CHUNK:Implementing Admin Features (Cropper & Setup)... ---
-        // --- 5. Admin View Renderers ---
+        async function loadClassDependencies() {
+            if(!AppState.currentClassId) return;
+            const tSnap = await getDoc(getDocRef('config', `tasks_${AppState.currentClassId}`));
+            AppState.tasks = tSnap.exists() ? (tSnap.data().tasks || []) : [];
+            
+            const q = await getDocs(getPublicRef('students'));
+            AppState.students = [];
+            q.forEach(d => {
+                let s = d.data();
+                if(s.classId === AppState.currentClassId) AppState.students.push({...s, id: d.id});
+            });
+            AppState.students.sort((a,b)=>a.rollNo-b.rollNo);
+        }
 
-        let cropperInstance = null;
-
-        window.handleLogoUpload = function(event) {
-            const file = event.target.files[0];
+        let cropper = null;
+        window.handleLogoUpload = function(e) {
+            const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.getElementById('cropper-image');
-                    img.src = e.target.result;
+                reader.onload = function(evt) {
+                    document.getElementById('cropper-image').src = evt.target.result;
                     document.getElementById('cropper-modal').classList.remove('hidden');
-                    
-                    if (cropperInstance) cropperInstance.destroy();
-                    
+                    if (cropper) cropper.destroy();
                     setTimeout(() => {
-                        cropperInstance = new Cropper(img, {
-                            aspectRatio: 1, 
-                            viewMode: 2,
-                            dragMode: 'move',
-                            autoCropArea: 0.9,
-                            restore: false,
-                            guides: true,
-                            center: true,
-                            highlight: false,
-                            cropBoxMovable: true,
-                            cropBoxResizable: true,
-                            toggleDragModeOnDblclick: false,
-                        });
+                        cropper = new Cropper(document.getElementById('cropper-image'), { aspectRatio: 1, viewMode: 2, autoCropArea: 0.9, guides: true, background: false });
                     }, 50);
                 };
                 reader.readAsDataURL(file);
-                event.target.value = ''; 
+                e.target.value = ''; 
             }
         };
-
-        window.closeCropper = function() {
-            document.getElementById('cropper-modal').classList.add('hidden');
-            if (cropperInstance) {
-                cropperInstance.destroy();
-                cropperInstance = null;
-            }
-        };
-
+        window.closeCropper = function() { document.getElementById('cropper-modal').classList.add('hidden'); if (cropper) cropper.destroy(); };
         window.applyCrop = function() {
-            if (!cropperInstance) return;
-            showLoading(true);
+            if (!cropper) return;
+            showLoading(true, "Processing image...");
             setTimeout(() => {
-                const canvas = cropperInstance.getCroppedCanvas({ width: 400, height: 400 });
-                let quality = 0.9;
-                let base64String = canvas.toDataURL('image/jpeg', quality);
-                
-                // Compress until under ~200kb
-                while ((base64String.length * 0.75) > 204800 && quality > 0.1) {
-                    quality -= 0.1;
-                    base64String = canvas.toDataURL('image/jpeg', quality);
-                }
-                
-                document.getElementById('setup-logo-base64').value = base64String;
-                document.getElementById('setup-logo-preview').src = base64String;
+                const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
+                let q = 0.9, b64 = canvas.toDataURL('image/jpeg', q);
+                while ((b64.length * 0.75) > 200000 && q > 0.1) { q -= 0.1; b64 = canvas.toDataURL('image/jpeg', q); }
+                document.getElementById('setup-logo-base64').value = b64;
+                document.getElementById('setup-logo-preview').src = b64;
                 document.getElementById('setup-logo-preview').classList.remove('hidden');
                 document.getElementById('setup-logo-icon').classList.add('hidden');
                 document.getElementById('btn-remove-logo').classList.remove('hidden');
-                
-                closeCropper();
-                showLoading(false);
+                closeCropper(); showLoading(false);
             }, 100);
         };
-
         window.removeLogo = function() {
             document.getElementById('setup-logo-base64').value = '';
-            document.getElementById('setup-logo-preview').src = '';
             document.getElementById('setup-logo-preview').classList.add('hidden');
             document.getElementById('setup-logo-icon').classList.remove('hidden');
             document.getElementById('btn-remove-logo').classList.add('hidden');
         };
 
         window.renderAdminSetup = function() {
-            const config = AppState.config;
-            
-            document.getElementById('setup-inst-name').value = config.instName || '';
-            document.getElementById('setup-inst-sub').value = config.instSubtitle || '';
-            
-            if (config.instLogo) {
-                document.getElementById('setup-logo-base64').value = config.instLogo;
-                document.getElementById('setup-logo-preview').src = config.instLogo;
+            const c = AppState.config;
+            document.getElementById('setup-inst-name').value = c.instName || '';
+            document.getElementById('setup-inst-sub').value = c.instSubtitle || '';
+            if (c.instLogo) {
+                document.getElementById('setup-logo-base64').value = c.instLogo;
+                document.getElementById('setup-logo-preview').src = c.instLogo;
                 document.getElementById('setup-logo-preview').classList.remove('hidden');
                 document.getElementById('setup-logo-icon').classList.add('hidden');
                 document.getElementById('btn-remove-logo').classList.remove('hidden');
-            } else {
-                removeLogo();
             }
-
-            document.getElementById('setup-cal-type').value = config.calendarType || 'english';
-            window.updateSetupMonths();
-            
-            setTimeout(() => {
-                document.getElementById('setup-cal-start').value = config.startMonth || 'January';
-                document.getElementById('setup-cal-end').value = config.endMonth || 'December';
-            }, 50);
-
+            document.getElementById('setup-cal-type').value = c.calendarType || 'english';
             renderAdminClassesList();
-        };
-
-        window.updateSetupMonths = function() {
-            const type = document.getElementById('setup-cal-type').value;
-            const startSel = document.getElementById('setup-cal-start');
-            const endSel = document.getElementById('setup-cal-end');
-            
-            startSel.innerHTML = '';
-            endSel.innerHTML = '';
-            
-            const list = type === 'arabic' ? ARABIC_MONTHS : ENGLISH_MONTHS;
-            list.forEach(m => {
-                startSel.add(new Option(m, m));
-                endSel.add(new Option(m, m));
-            });
         };
 
         window.adminAddClass = function() {
-            const classId = 'class_' + Date.now();
-            AppState.config.classes.push({
-                id: classId,
-                name: `New Class ${AppState.config.classes.length + 1}`,
-                periodsCount: 3,
-                subjects: []
-            });
+            AppState.config.classes.push({ id: 'cls_' + Date.now(), name: `Class ${AppState.config.classes.length + 1}`, periodsCount: 4, subjects: [] });
             renderAdminClassesList();
         };
-
-        window.adminRemoveClass = function(classId) {
-            AppState.config.classes = AppState.config.classes.filter(c => c.id !== classId);
-            renderAdminClassesList();
-        };
-
-        window.updateClassField = function(classId, field, value) {
-            const cls = AppState.config.classes.find(c => c.id === classId);
-            if (cls) {
-                if (field === 'periodsCount') cls[field] = parseInt(value) || 1;
-                else cls[field] = value;
-            }
-        };
-
-        window.updateClassSubjects = function(classId, value) {
-            const cls = AppState.config.classes.find(c => c.id === classId);
-            if (cls) {
-                cls.subjects = value.split(',').map(s => s.trim()).filter(s => s.length > 0);
-            }
-        };
+        window.adminRemoveClass = function(id) { AppState.config.classes = AppState.config.classes.filter(c => c.id !== id); renderAdminClassesList(); };
+        window.updateClassField = function(id, f, v) { const c = AppState.config.classes.find(x => x.id === id); if(c) c[f] = f==='periodsCount'?parseInt(v)||1:v; };
+        window.updateClassSubjects = function(id, v) { const c = AppState.config.classes.find(x => x.id === id); if(c) c.subjects = v.split(',').map(s=>s.trim()).filter(s=>s.length>0); };
 
         function renderAdminClassesList() {
-            const container = document.getElementById('setup-classes-container');
-            container.innerHTML = '';
-            
-            if(!AppState.config.classes || AppState.config.classes.length === 0) {
-                container.innerHTML = '<div class="text-center p-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl"><i class="fas fa-chalkboard-teacher text-2xl text-slate-300 mb-2 block"></i><p class="text-sm text-slate-500">No classes added yet. Click "Add Class" to get started.</p></div>';
-                return;
-            }
-
-            AppState.config.classes.forEach(cls => {
-                const subjsStr = (cls.subjects || []).join(', ');
-                container.innerHTML += `
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative shadow-sm">
-                        <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition-colors"><i class="fas fa-trash text-xs"></i></button>
-                        
-                        <div class="mb-3 pr-10">
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Class Name</label>
-                            <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-bold text-[#0f172a] focus:border-blue-500 outline-none transition-colors">
+            const c = document.getElementById('setup-classes-container');
+            if(AppState.config.classes.length === 0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No classes added.</p>'; return; }
+            c.innerHTML = AppState.config.classes.map(cls => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 relative shadow-sm">
+                    <button onclick="adminRemoveClass('${cls.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-100 text-red-500 hover:bg-red-200 flex items-center justify-center transition-colors"><i class="fas fa-trash text-xs"></i></button>
+                    <div class="mb-3 pr-10">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Class Name</label>
+                        <input type="text" value="${cls.name}" onchange="updateClassField('${cls.id}', 'name', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Periods/Day</label>
+                            <input type="number" min="1" value="${cls.periodsCount||4}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm text-center outline-none focus:border-blue-500">
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div class="md:col-span-1">
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Max Periods / Day</label>
-                                <input type="number" min="1" max="10" value="${cls.periodsCount || 3}" onchange="updateClassField('${cls.id}', 'periodsCount', this.value)" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm text-center focus:border-blue-500 outline-none transition-colors">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subjects (Comma separated)</label>
-                                <input type="text" value="${subjsStr}" onchange="updateClassSubjects('${cls.id}', this.value)" placeholder="e.g. Quran, Fiqh, Aqeedah" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-blue-500 outline-none transition-colors">
-                            </div>
+                        <div class="col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subjects (Comma separated)</label>
+                            <input type="text" value="${(cls.subjects||[]).join(', ')}" onchange="updateClassSubjects('${cls.id}', this.value)" class="w-full bg-white border border-slate-200 rounded px-3 py-2 text-sm outline-none focus:border-blue-500 font-medium" placeholder="e.g. Quran, Fiqh">
                         </div>
                     </div>
-                `;
-            });
+                </div>
+            `).join('');
         }
 
         window.saveGlobalSetup = async function() {
-            if (!currentUser) return;
-            showLoading(true);
+            showLoading(true, "Saving Configuration...");
             try {
                 AppState.config.instName = document.getElementById('setup-inst-name').value;
                 AppState.config.instSubtitle = document.getElementById('setup-inst-sub').value;
                 AppState.config.instLogo = document.getElementById('setup-logo-base64').value;
-                
                 AppState.config.calendarType = document.getElementById('setup-cal-type').value;
-                AppState.config.startMonth = document.getElementById('setup-cal-start').value;
-                AppState.config.endMonth = document.getElementById('setup-cal-end').value;
-
-                await setDoc(getConfigDoc(), AppState.config);
-                
-                updateHeaderUI();
+                await setDoc(getDocRef('config', 'global'), AppState.config);
                 setupGlobalClassSelector();
-                showAlert("Success", "Global configuration saved successfully.", "success");
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Failed to save configuration.", "error");
-            }
+                showAlert("Success", "Configuration saved.", "success");
+            } catch(e) { showAlert("Error", "Failed to save configuration. Check Firestore permissions.", "error"); }
             showLoading(false);
         };
 
-        // --- STREAMING_CHUNK:Implementing Admin Sub-Modules (Students, Timetable, Syllabus)... ---
-        // --- Admin: Students ---
         window.renderAdminStudents = async function() {
-            const classConfig = getCurrentClassConfig();
-            const listEl = document.getElementById('admin-students-list');
-            const contentContainer = document.getElementById('admin-students-content');
-            
-            if(!classConfig) {
-                contentContainer.innerHTML = '<div class="text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100"><i class="fas fa-exclamation-circle text-4xl text-yellow-400 mb-3 block"></i><p class="text-slate-600 font-medium">Please add a class in Global Setup and select it from the top menu first.</p></div>';
-                return;
-            } else {
-                if(!document.getElementById('new-student-name')) {
-                    // Safe reload of the view structure
-                    navigate(AppState.currentView); 
-                    return;
-                }
-            }
-            
-            showLoading(true);
-            listEl.innerHTML = '';
-            
-            try {
-                const querySnapshot = await getDocs(getPublicRef('students'));
-                let students = [];
-                querySnapshot.forEach(doc => {
-                    let d = doc.data();
-                    if(d.classId === classConfig.id) {
-                        students.push({...d, docId: doc.id});
-                    }
-                });
-                
-                students.sort((a,b) => a.rollNo - b.rollNo);
-
-                if (students.length === 0) {
-                    listEl.innerHTML = '<div class="p-6 text-center text-sm text-slate-400">No students found for this class. Add one above.</div>';
-                } else {
-                    students.forEach(s => {
-                        listEl.innerHTML += `
-                            <div class="p-3 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">${s.rollNo}</div>
-                                    <div class="text-sm font-bold text-slate-800">${s.name}</div>
-                                </div>
-                                <button onclick="deleteStudent('${s.docId}')" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"><i class="fas fa-trash text-xs"></i></button>
-                            </div>
-                        `;
-                    });
-                }
-            } catch(e) {
-                console.error(e);
-                listEl.innerHTML = '<div class="p-4 text-center text-sm text-red-400">Error loading students.</div>';
-            }
-            showLoading(false);
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const list = document.getElementById('admin-students-list');
+            if(AppState.students.length===0) list.innerHTML = '<div class="p-4 text-center text-sm text-slate-400">No students found.</div>';
+            else list.innerHTML = AppState.students.map(s => `
+                <div class="p-3 flex justify-between items-center bg-white border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 font-bold text-slate-500 flex items-center justify-center text-xs border border-slate-200">${s.rollNo}</div>
+                        <div class="text-sm font-bold text-slate-700">${s.name}</div>
+                    </div>
+                    <button onclick="deleteStudent('${s.id}')" class="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"><i class="fas fa-trash"></i></button>
+                </div>`).join('');
         };
-
         window.adminAddStudent = async function() {
-            const classConfig = getCurrentClassConfig();
-            if(!classConfig) { showAlert("Error", "No class selected.", "error"); return; }
-            
-            const nameInput = document.getElementById('new-student-name');
-            const name = nameInput.value.trim();
-            if(!name) { showAlert("Warning", "Enter student name.", "warning"); return; }
-
-            showLoading(true);
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const name = document.getElementById('new-student-name').value.trim();
+            if(!name) return;
+            showLoading(true, "Adding Student...");
             try {
-                const querySnapshot = await getDocs(getPublicRef('students'));
-                let maxRoll = 0;
-                querySnapshot.forEach(doc => {
-                    let d = doc.data();
-                    if(d.classId === classConfig.id && d.rollNo > maxRoll) maxRoll = d.rollNo;
-                });
-
-                const newRef = doc(getPublicRef('students'));
-                await setDoc(newRef, {
-                    classId: classConfig.id,
-                    name: name,
-                    rollNo: maxRoll + 1,
-                    addedAt: new Date().toISOString()
-                });
-                
-                nameInput.value = '';
-                await renderAdminStudents();
-                showAlert("Success", "Student added successfully.", "success");
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Could not add student.", "error");
-            }
+                let max = 0; AppState.students.forEach(s => { if(s.rollNo>max) max=s.rollNo; });
+                await setDoc(doc(getPublicRef('students')), { classId: cls.id, name: name, rollNo: max+1 });
+                document.getElementById('new-student-name').value = '';
+                await loadClassDependencies(); await renderAdminStudents();
+            } catch(e) { showAlert("Error", "Failed to add student.", "error"); }
             showLoading(false);
         };
-
-        window.deleteStudent = async function(docId) {
-            if(!confirm("Are you sure you want to delete this student?")) return;
-            showLoading(true);
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'students', docId));
-                await renderAdminStudents();
-            } catch(e) {
-                showAlert("Error", "Could not delete student.", "error");
+        window.deleteStudent = async function(id) {
+            if(confirm("Delete student?")) {
+                showLoading(true, "Deleting..."); await deleteDoc(getDocRef('students', id)); await loadClassDependencies(); await renderAdminStudents(); showLoading(false);
             }
-            showLoading(false);
         };
 
-        // --- Admin: Timetable ---
         window.renderAdminTimetableForm = async function() {
-            const classConfig = getCurrentClassConfig();
-            const container = document.getElementById('admin-timetable-periods');
-            const dayTitle = document.getElementById('admin-timetable-day-title');
-            
-            if(!classConfig) {
-                container.innerHTML = '<div class="text-center p-6"><i class="fas fa-exclamation-circle text-3xl text-yellow-400 mb-2 block"></i><p class="text-sm text-slate-500">Please select a class from the top menu.</p></div>';
-                if(dayTitle) dayTitle.innerText = "Setup Required";
-                return;
-            }
-            
+            const cls = getCurrentClassConfig(); if(!cls) return;
             const day = document.getElementById('admin-timetable-day').value;
-            if(dayTitle) dayTitle.innerText = `${day} Timetable`;
-            
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
-            
+            const c = document.getElementById('admin-timetable-periods'); c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-slate-400"></i></div>';
             try {
-                const ttDoc = await getDoc(getTimetableDoc(classConfig.id));
-                let ttData = ttDoc.exists() ? ttDoc.data() : {};
-                let dayData = ttData[day] || [];
-                
-                container.innerHTML = '';
-                const maxP = classConfig.periodsCount || 3;
-                const subjects = classConfig.subjects || [];
-                
-                let subOptions = `<option value="">-- Free / None --</option>`;
-                subjects.forEach(s => subOptions += `<option value="${s}">${s}</option>`);
-
-                if (subjects.length === 0) {
-                    container.innerHTML = '<p class="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-center">No subjects found for this class. Add subjects in Global Setup.</p>';
-                }
-
-                for(let i=0; i<maxP; i++) {
-                    const pData = dayData[i] || { start: '', end: '', subject: '' };
-                    container.innerHTML += `
-                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 shadow-sm">
-                            <div class="text-xs font-bold text-blue-600 uppercase mb-3 flex items-center gap-2"><i class="far fa-clock"></i> Period ${i+1}</div>
-                            <div class="grid grid-cols-2 gap-4 mb-3">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Start Time</label>
-                                    <input type="time" id="tt_start_${i}" value="${pData.start}" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">End Time</label>
-                                    <input type="time" id="tt_end_${i}" value="${pData.end}" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm outline-none focus:border-blue-500 transition-colors">
-                                </div>
+                const snap = await getDoc(getDocRef('config', 'timetable_'+cls.id));
+                let tData = snap.exists() ? snap.data()[day] || [] : [];
+                let subOpts = `<option value="">-- Free / Break --</option>` + (cls.subjects||[]).map(s=>`<option value="${s}">${s}</option>`).join('');
+                let html = '';
+                for(let i=0; i<(cls.periodsCount||4); i++) {
+                    let d = tData[i] || {start:'', end:'', subject:''};
+                    html += `
+                        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 shadow-sm">
+                            <div class="text-xs font-bold text-blue-600 mb-2 uppercase">Period ${i+1}</div>
+                            <div class="grid grid-cols-2 gap-3 mb-2">
+                                <div><label class="block text-[9px] font-bold text-slate-400 uppercase">Start Time</label><input type="time" id="tt_start_${i}" value="${d.start}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500 font-medium"></div>
+                                <div><label class="block text-[9px] font-bold text-slate-400 uppercase">End Time</label><input type="time" id="tt_end_${i}" value="${d.end}" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-sm outline-none focus:border-blue-500 font-medium"></div>
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subject</label>
-                                <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-medium outline-none focus:border-blue-500 transition-colors">
-                                    ${subOptions}
-                                </select>
-                            </div>
-                        </div>
-                    `;
-                    setTimeout(() => {
-                        if(pData.subject && document.getElementById(`tt_sub_${i}`)) {
-                            document.getElementById(`tt_sub_${i}`).value = pData.subject;
-                        }
-                    }, 10);
+                            <select id="tt_sub_${i}" class="w-full bg-white border border-slate-200 rounded px-2 py-2 text-sm font-medium outline-none focus:border-blue-500">${subOpts}</select>
+                        </div>`;
                 }
-            } catch(e) {
-                console.error(e);
-                container.innerHTML = '<p class="text-sm text-red-500 text-center p-4">Error loading timetable data.</p>';
-            }
+                c.innerHTML = html;
+                for(let i=0; i<(cls.periodsCount||4); i++) {
+                    let d = tData[i]; if(d && d.subject) document.getElementById(`tt_sub_${i}`).value = d.subject;
+                }
+            } catch(e) { c.innerHTML = 'Error loading timetable.'; }
         };
-
         window.saveAdminTimetable = async function() {
-            const classConfig = getCurrentClassConfig();
-            if(!classConfig) { showAlert("Error", "No class selected.", "error"); return; }
-            
+            const cls = getCurrentClassConfig(); if(!cls) return;
             const day = document.getElementById('admin-timetable-day').value;
-            const maxP = classConfig.periodsCount || 3;
-            
-            let dayArray = [];
-            for(let i=0; i<maxP; i++) {
-                dayArray.push({
-                    start: document.getElementById(`tt_start_${i}`).value,
-                    end: document.getElementById(`tt_end_${i}`).value,
-                    subject: document.getElementById(`tt_sub_${i}`).value
-                });
+            let arr = [];
+            for(let i=0; i<(cls.periodsCount||4); i++) {
+                arr.push({ start: document.getElementById(`tt_start_${i}`).value, end: document.getElementById(`tt_end_${i}`).value, subject: document.getElementById(`tt_sub_${i}`).value });
             }
-
-            showLoading(true);
-            try {
-                const ttRef = getTimetableDoc(classConfig.id);
-                await setDoc(ttRef, { [day]: dayArray }, { merge: true });
-                showAlert("Saved", `Timetable for ${day} saved successfully.`, "success");
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Could not save timetable.", "error");
-            }
-            showLoading(false);
+            showLoading(true, "Saving Timetable...");
+            try { await setDoc(getDocRef('config', 'timetable_'+cls.id), { [day]: arr }, { merge: true }); showAlert("Saved", `Timetable updated.`, "success"); } 
+            catch(e) { showAlert("Error", "Failed to save timetable.", "error"); } showLoading(false);
         };
 
-        // --- Admin: Syllabus ---
+        window.renderAdminTasks = function() {
+            const c = document.getElementById('admin-tasks-list');
+            if(AppState.tasks.length===0) { c.innerHTML = '<p class="text-sm text-slate-400 text-center">No tasks defined.</p>'; return; }
+            c.innerHTML = AppState.tasks.map(t => `
+                <div class="flex justify-between items-center bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                    <div><div class="font-bold text-slate-800 text-sm">${t.title}</div><div class="text-[10px] font-bold text-amber-500 uppercase mt-1 bg-amber-50 inline-block px-2 py-0.5 rounded">${t.points} Points</div></div>
+                    <button onclick="adminRemoveTask('${t.id}')" class="text-red-400 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 transition-colors"><i class="fas fa-trash text-xs"></i></button>
+                </div>
+            `).join('');
+        };
+        window.adminAddTask = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const title = document.getElementById('new-task-title').value.trim();
+            const pts = parseInt(document.getElementById('new-task-points').value) || 0;
+            if(!title) return;
+            AppState.tasks.push({ id: 't_'+Date.now(), title, points: pts });
+            showLoading(true, "Saving Task...");
+            try { 
+                await setDoc(getDocRef('config', 'tasks_'+cls.id), { tasks: AppState.tasks }); 
+                document.getElementById('new-task-title').value = ''; renderAdminTasks(); 
+            } catch(e) {} showLoading(false);
+        };
+        window.adminRemoveTask = async function(id) {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            AppState.tasks = AppState.tasks.filter(t=>t.id!==id);
+            showLoading(true, "Removing Task...");
+            try { await setDoc(getDocRef('config', 'tasks_'+cls.id), { tasks: AppState.tasks }); renderAdminTasks(); } catch(e) {} showLoading(false);
+        };
+
         window.renderAdminSyllabusForm = async function() {
-            const classConfig = getCurrentClassConfig();
-            const container = document.getElementById('admin-syllabus-subjects');
-            const monthSel = document.getElementById('admin-syllabus-month');
-            
-            if(!classConfig) {
-                container.innerHTML = '<div class="text-center p-6"><i class="fas fa-exclamation-circle text-3xl text-yellow-400 mb-2 block"></i><p class="text-sm text-slate-500">Please select a class from the top menu.</p></div>';
-                return;
-            }
-
-            if(monthSel.options.length === 0) {
-                const months = getActiveMonthsList();
-                months.forEach(m => monthSel.add(new Option(m, m)));
-            }
-
-            const month = monthSel.value;
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
-
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const mSel = document.getElementById('admin-syllabus-month');
+            if(mSel.options.length === 0) getActiveMonthsList().forEach(m => mSel.add(new Option(m, m)));
+            const month = mSel.value;
+            const c = document.getElementById('admin-syllabus-subjects');
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-slate-400"></i></div>';
             try {
-                const sylDoc = await getDoc(getSyllabusDoc(classConfig.id));
-                let sylData = sylDoc.exists() ? sylDoc.data() : {};
-                let monthData = sylData[month] || {};
-
-                container.innerHTML = '';
-                const subjects = classConfig.subjects || [];
-                
-                if(subjects.length === 0) {
-                    container.innerHTML = '<p class="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-center">No subjects defined for this class.</p>';
-                    return;
-                }
-
-                subjects.forEach((s, idx) => {
-                    const target = monthData[s] || '';
-                    container.innerHTML += `
-                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm hover:border-purple-300 transition-colors">
-                            <div class="font-bold text-slate-700 text-sm w-1/2">${s}</div>
-                            <div class="w-1/2 flex items-center gap-3 justify-end">
-                                <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Target Lsn:</span>
-                                <input type="number" id="syl_tgt_${idx}" value="${target}" class="w-20 bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm text-center outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                const snap = await getDoc(getDocRef('config', 'syllabus_'+cls.id));
+                let sData = snap.exists() ? snap.data()[month] || {} : {};
+                if(!cls.subjects || cls.subjects.length===0) { c.innerHTML = '<p class="text-sm text-slate-500">No subjects defined.</p>'; return; }
+                let html = '';
+                cls.subjects.forEach((s, idx) => {
+                    html += `
+                        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-lg p-3">
+                            <div class="font-bold text-slate-700 text-sm">${s}</div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold">Target Lesson:</span>
+                                <input type="number" id="syl_tgt_${idx}" value="${sData[s]||''}" class="w-16 bg-white border border-slate-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-slate-500 font-bold">
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
-            } catch(e) {
-                console.error(e);
-                container.innerHTML = '<p class="text-sm text-red-500 text-center p-4">Error loading syllabus data.</p>';
-            }
+                c.innerHTML = html;
+            } catch(e) { c.innerHTML = 'Error loading syllabus data.'; }
         };
-
         window.saveAdminSyllabus = async function() {
-            const classConfig = getCurrentClassConfig();
-            if(!classConfig) { showAlert("Error", "No class selected.", "error"); return; }
-            
+            const cls = getCurrentClassConfig(); if(!cls) return;
             const month = document.getElementById('admin-syllabus-month').value;
-            const subjects = classConfig.subjects || [];
-            
-            let monthObj = {};
-            subjects.forEach((s, idx) => {
-                monthObj[s] = document.getElementById(`syl_tgt_${idx}`).value;
-            });
-
-            showLoading(true);
-            try {
-                const sylRef = getSyllabusDoc(classConfig.id);
-                await setDoc(sylRef, { [month]: monthObj }, { merge: true });
-                showAlert("Saved", `Syllabus targets for ${month} saved.`, "success");
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Could not save targets.", "error");
-            }
-            showLoading(false);
+            let obj = {};
+            (cls.subjects||[]).forEach((s, i) => { obj[s] = document.getElementById(`syl_tgt_${i}`).value; });
+            showLoading(true, "Saving Targets...");
+            try { await setDoc(getDocRef('config', 'syllabus_'+cls.id), { [month]: obj }, { merge: true }); showAlert("Saved", "Targets saved.", "success"); } 
+            catch(e) { showAlert("Error", "Failed to save.", "error"); } showLoading(false);
         };
-
-        // --- STREAMING_CHUNK:Implementing User Views (Home, Tracker, Progress)... ---
-        // --- 6. User Views Renderers ---
 
         window.renderHomeView = async function() {
-            const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
-
+            const cls = getCurrentClassConfig(); if(!cls) return;
             const date = new Date();
-            const dayName = DAYS_OF_WEEK[date.getDay()];
-            
-            document.getElementById('home-day-title').innerText = dayName;
+            document.getElementById('home-day-title').innerText = DAYS_OF_WEEK[date.getDay()];
             document.getElementById('home-date-subtitle').innerText = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric'});
-            document.getElementById('home-class-badge').innerText = classConfig.name;
-
-            const container = document.getElementById('home-timetable-container');
-            const emptyState = document.getElementById('home-empty-state');
-            
-            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>';
-            emptyState.classList.add('hidden');
-
+            const c = document.getElementById('home-timetable-container');
+            const emp = document.getElementById('home-empty-state');
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-blue-500"></i></div>'; emp.classList.add('hidden');
             try {
-                const ttDoc = await getDoc(getTimetableDoc(classConfig.id));
-                let ttData = ttDoc.exists() ? ttDoc.data() : {};
-                let dayData = ttData[dayName] || [];
+                const snap = await getDoc(getDocRef('config', 'timetable_'+cls.id));
+                let tData = snap.exists() ? snap.data()[DAYS_OF_WEEK[date.getDay()]] || [] : [];
+                tData = tData.filter(p => p.subject && p.subject.trim() !== '');
+                if(tData.length===0) { c.innerHTML=''; emp.classList.remove('hidden'); }
+                else {
+                    c.innerHTML = tData.map((p,i) => {
+                        const cols = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200', 'bg-purple-50 text-purple-800 border-purple-200'];
+                        const cl = cols[p.subject.length % cols.length];
+                        return `
+                        <div class="${cl} border rounded-2xl p-5 shadow-sm relative overflow-hidden transform transition hover:-translate-y-1">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-white opacity-20 rounded-bl-full -mr-4 -mt-4"></div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold uppercase opacity-70 tracking-wider">Period ${i+1}</span>
+                                <span class="text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full"><i class="far fa-clock mr-1"></i>${p.start||'--'} - ${p.end||'--'}</span>
+                            </div>
+                            <h3 class="text-2xl font-black mt-2 tracking-tight">${p.subject}</h3>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) { c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading timetable.</p>'; }
+        };
 
-                dayData = dayData.filter(p => p.subject && p.subject.trim() !== '');
+        let attData = {}, attDate = '', attTempLeaveStudent = null;
+        window.initAttendanceView = function() {
+            document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
+            loadAttendance();
+        };
+        window.loadAttendance = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            attDate = document.getElementById('attendance-date').value;
+            const c = document.getElementById('attendance-students-list'); c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-emerald-500"></i></div>';
+            try {
+                const aSnap = await getDoc(getDocRef('attendance', `${cls.id}_${attDate}`));
+                attData = aSnap.exists() ? aSnap.data().records : {};
 
-                if (dayData.length === 0) {
-                    container.innerHTML = '';
-                    emptyState.classList.remove('hidden');
-                } else {
-                    container.innerHTML = '';
-                    dayData.forEach((p, idx) => {
-                        const timeStr = (p.start && p.end) ? `${p.start} - ${p.end}` : 'Time not set';
-                        const colors = ['bg-blue-50 text-blue-800 border-blue-200', 'bg-emerald-50 text-emerald-800 border-emerald-200', 'bg-amber-50 text-amber-800 border-amber-200', 'bg-purple-50 text-purple-800 border-purple-200'];
-                        const colClass = colors[p.subject.length % colors.length];
+                if(AppState.students.length===0) c.innerHTML = '<div class="text-center text-sm text-slate-400">No students found.</div>';
+                else {
+                    c.innerHTML = AppState.students.map(s => {
+                        let stat = attData[s.id] ? attData[s.id].status : 'present';
+                        let reason = attData[s.id] ? attData[s.id].reason : '';
+                        
+                        let clP = stat==='present' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-200';
+                        let clA = stat==='absent' ? 'bg-red-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-200';
+                        let clL = stat==='leave' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-400 hover:bg-slate-200';
 
-                        container.innerHTML += `
-                            <div class="relative overflow-hidden ${colClass} border rounded-2xl p-5 shadow-sm transform transition hover:-translate-y-1">
-                                <div class="absolute top-0 right-0 w-16 h-16 bg-white opacity-20 rounded-bl-full -mr-4 -mt-4"></div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-xs font-bold uppercase tracking-wider opacity-70">Period ${idx + 1}</span>
-                                    <span class="text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full"><i class="far fa-clock mr-1"></i>${timeStr}</span>
+                        return `
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2" id="att_card_${s.id}">
+                            <div class="flex items-center gap-3 overflow-hidden flex-1">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">${s.rollNo}</div>
+                                <div class="truncate">
+                                    <div class="text-sm font-bold text-slate-800 truncate">${s.name}</div>
+                                    <div class="text-[9px] text-amber-500 font-bold truncate" id="reason_${s.id}">${reason ? 'Leave: '+reason : ''}</div>
                                 </div>
-                                <h3 class="text-2xl font-black mt-2 tracking-tight">${p.subject}</h3>
                             </div>
-                        `;
-                    });
-                }
-            } catch(e) {
-                console.error(e);
-                container.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load timetable.</p>';
-            }
-        };
-
-        let trackerData = {}; 
-
-        window.renderTrackerView = async function() {
-            const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
-
-            const subSel = document.getElementById('tracker-subject-select');
-            const currentSub = subSel.value;
-            
-            subSel.innerHTML = '<option value="">-- Choose Subject --</option>';
-            (classConfig.subjects || []).forEach(s => {
-                subSel.add(new Option(s, s));
-            });
-            if(currentSub && classConfig.subjects.includes(currentSub)) subSel.value = currentSub;
-            
-            subSel.onchange = loadTrackerStudents;
-            if(subSel.value) loadTrackerStudents();
-            else document.getElementById('tracker-students-list').innerHTML = '<div class="text-center text-sm text-slate-400 py-10"><i class="fas fa-hand-pointer text-2xl mb-2 block"></i>Select subject first</div>';
-        };
-
-        window.loadTrackerStudents = async function() {
-            const classConfig = getCurrentClassConfig();
-            const subject = document.getElementById('tracker-subject-select').value;
-            const listEl = document.getElementById('tracker-students-list');
-            
-            if(!subject) {
-                listEl.innerHTML = ''; return;
-            }
-
-            listEl.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-green-500"></i></div>';
-            
-            try {
-                const qs = await getDocs(getPublicRef('students'));
-                let students = [];
-                qs.forEach(d => {
-                    let data = d.data();
-                    if(data.classId === classConfig.id) students.push({...data, id: d.id});
-                });
-                students.sort((a,b) => a.rollNo - b.rollNo);
-
-                const dateStr = new Date().toISOString().split('T')[0];
-                const trackId = `${classConfig.id}_${dateStr}_${subject.replace(/\s+/g,'_')}`;
-                
-                const trDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'daily_tracking', trackId));
-                trackerData = trDoc.exists() ? trDoc.data().students : {};
-
-                listEl.innerHTML = '';
-                if(students.length===0){
-                    listEl.innerHTML = '<div class="text-center text-sm text-slate-400">No students found.</div>';
-                    return;
-                }
-
-                students.forEach(s => {
-                    const status = trackerData[s.id] || 'pending'; 
-                    
-                    let bgClass = 'bg-white border-slate-200';
-                    let icon = '<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
-                    
-                    if(status === 'asked') {
-                        bgClass = 'bg-green-50 border-green-300 shadow-inner';
-                        icon = '<i class="fas fa-check-circle text-green-500 text-xl"></i>';
-                    } else if (status === 'absent') {
-                        bgClass = 'bg-red-50 border-red-200 shadow-inner opacity-75';
-                        icon = '<i class="fas fa-times-circle text-red-400 text-xl"></i>';
-                    }
-
-                    listEl.innerHTML += `
-                        <div onclick="cycleStudentStatus('${s.id}')" id="card_${s.id}" class="flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all ${bgClass} select-none active:scale-95">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 shadow-sm">${s.rollNo}</div>
-                                <div class="font-bold text-slate-800 text-sm">${s.name}</div>
+                            <div class="flex bg-slate-100 rounded-lg p-1 gap-1 shrink-0 shadow-inner">
+                                <button id="btn_p_${s.id}" onclick="updateAttStatus('${s.id}', 'present')" class="w-8 h-8 rounded-md font-bold text-xs transition-all ${clP}">P</button>
+                                <button id="btn_a_${s.id}" onclick="updateAttStatus('${s.id}', 'absent')" class="w-8 h-8 rounded-md font-bold text-xs transition-all ${clA}">A</button>
+                                <button id="btn_l_${s.id}" onclick="updateAttStatus('${s.id}', 'leave')" class="w-8 h-8 rounded-md font-bold text-xs transition-all ${clL}">L</button>
                             </div>
-                            <div id="icon_${s.id}">${icon}</div>
-                        </div>
-                    `;
-                });
-            } catch(e) {
-                console.error(e);
-                listEl.innerHTML = '<div class="text-red-500 text-sm text-center">Error loading data.</div>';
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) { c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading attendance.</p>'; }
+        };
+        window.updateAttStatus = function(sid, stat) {
+            if(!attData[sid]) attData[sid] = { status: stat, reason: '' };
+            else attData[sid].status = stat;
+
+            const btnP = document.getElementById(`btn_p_${sid}`);
+            const btnA = document.getElementById(`btn_a_${sid}`);
+            const btnL = document.getElementById(`btn_l_${sid}`);
+
+            btnP.className = "w-8 h-8 rounded-md font-bold text-xs transition-all text-slate-400 hover:bg-slate-200";
+            btnA.className = "w-8 h-8 rounded-md font-bold text-xs transition-all text-slate-400 hover:bg-slate-200";
+            btnL.className = "w-8 h-8 rounded-md font-bold text-xs transition-all text-slate-400 hover:bg-slate-200";
+
+            if (stat === 'present') btnP.className = "w-8 h-8 rounded-md font-bold text-xs transition-all bg-emerald-500 text-white shadow-md";
+            else if (stat === 'absent') btnA.className = "w-8 h-8 rounded-md font-bold text-xs transition-all bg-red-500 text-white shadow-md";
+            else if (stat === 'leave') btnL.className = "w-8 h-8 rounded-md font-bold text-xs transition-all bg-amber-500 text-white shadow-md";
+
+            if(stat === 'leave') {
+                attTempLeaveStudent = sid;
+                document.getElementById('leave-reason-input').value = attData[sid].reason || '';
+                document.getElementById('leave-modal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('leave-content').classList.remove('scale-95'), 10);
+            } else {
+                attData[sid].reason = '';
+                document.getElementById(`reason_${sid}`).innerText = '';
             }
         };
-
-        window.cycleStudentStatus = function(sid) {
-            const current = trackerData[sid] || 'pending';
-            let next = 'asked';
-            if (current === 'asked') next = 'absent';
-            else if (current === 'absent') next = 'pending';
-            
-            trackerData[sid] = next;
-            
-            const card = document.getElementById(`card_${sid}`);
-            const iconC = document.getElementById(`icon_${sid}`);
-            
-            card.className = "flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all select-none active:scale-95 " + 
-                (next === 'asked' ? 'bg-green-50 border-green-300 shadow-inner' : 
-                 next === 'absent' ? 'bg-red-50 border-red-200 shadow-inner opacity-75' : 
-                 'bg-white border-slate-200');
-                 
-            iconC.innerHTML = (next === 'asked' ? '<i class="fas fa-check-circle text-green-500 text-xl"></i>' : 
-                               next === 'absent' ? '<i class="fas fa-times-circle text-red-400 text-xl"></i>' : 
-                               '<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>');
+        window.closeLeaveModal = function() {
+            document.getElementById('leave-content').classList.add('scale-95');
+            setTimeout(() => document.getElementById('leave-modal').classList.add('hidden'), 200);
         };
-
-        window.saveDailyTracking = async function() {
-            const classConfig = getCurrentClassConfig();
-            const subject = document.getElementById('tracker-subject-select').value;
-            if(!classConfig || !subject) {
-                showAlert("Wait", "Select a subject first.", "warning"); return;
+        window.confirmLeaveReason = function() {
+            if(attTempLeaveStudent) {
+                const r = document.getElementById('leave-reason-input').value;
+                attData[attTempLeaveStudent].reason = r;
+                document.getElementById(`reason_${attTempLeaveStudent}`).innerText = r ? 'Leave: '+r : '';
             }
-
-            const dateStr = new Date().toISOString().split('T')[0];
-            const trackId = `${classConfig.id}_${dateStr}_${subject.replace(/\s+/g,'_')}`;
-            
-            showLoading(true);
+            closeLeaveModal();
+        };
+        window.saveAttendance = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            showLoading(true, "Saving Attendance...");
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'daily_tracking', trackId), {
-                    date: dateStr,
-                    subject: subject,
-                    classId: classConfig.id,
-                    students: trackerData,
-                    updatedAt: new Date().toISOString()
-                });
-                showAlert("Saved", "Tracking data saved successfully.", "success");
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Could not save data.", "error");
-            }
+                await setDoc(getDocRef('attendance', `${cls.id}_${attDate}`), { classId: cls.id, date: attDate, records: attData });
+                showAlert("Saved", "Attendance saved successfully.", "success");
+            } catch(e) { showAlert("Error", "Failed to save attendance.", "error"); }
             showLoading(false);
         };
 
-        window.renderSyllabusView = async function() {
-            const classConfig = getCurrentClassConfig();
-            if(!classConfig) return;
+        let evalData = {};
+        window.initTaskEvalView = function() {
+            const c = document.getElementById('eval-task-container');
+            let html = '<div class="flex overflow-x-auto gap-2 pb-2 hide-scrollbar">';
+            if(AppState.tasks.length === 0) html += '<span class="text-sm text-slate-400 italic">No tasks defined.</span>';
+            else {
+                AppState.tasks.forEach((t, i) => {
+                    html += `
+                    <label class="shrink-0 cursor-pointer">
+                        <input type="radio" name="eval_task" value="${t.id}" class="hidden chip-input-amber" onchange="loadTaskEvaluations()" ${i===0?'checked':''}>
+                        <span class="chip-label block px-4 py-2 rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 shadow-sm transition-all">${t.title} <span class="opacity-70 text-[10px]">(${t.points}p)</span></span>
+                    </label>`;
+                });
+            }
+            html += '</div>';
+            c.innerHTML = html;
+            if(AppState.tasks.length > 0) loadTaskEvaluations();
+        };
+        window.loadTaskEvaluations = async function() {
+            const cls = getCurrentClassConfig(); 
+            const tId = (document.querySelector('input[name="eval_task"]:checked') || {}).value;
+            const c = document.getElementById('eval-students-list');
+            if(!tId || !cls) { c.innerHTML = ''; return; }
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-amber-500"></i></div>';
+            try {
+                const dateStr = new Date().toISOString().split('T')[0];
+                const snap = await getDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`));
+                evalData = snap.exists() ? snap.data().records : {};
 
-            const monthSel = document.getElementById('progress-month-select');
-            const currentSel = monthSel.value;
-            monthSel.innerHTML = '';
-            getActiveMonthsList().forEach(m => monthSel.add(new Option(m,m)));
-            if(currentSel) monthSel.value = currentSel;
-            
-            monthSel.onchange = loadSyllabusProgress;
-            loadSyllabusProgress();
+                if(AppState.students.length === 0) c.innerHTML = '<div class="text-center text-sm text-slate-400">No students.</div>';
+                else {
+                    c.innerHTML = AppState.students.map(s => {
+                        let val = evalData[s.id] && evalData[s.id][tId] === true;
+                        return `
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300 shadow-inner':''}" onclick="toggleEval('${s.id}', '${tId}')" id="eval_card_${s.id}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500 border border-slate-200">${s.rollNo}</div>
+                                <div class="font-bold text-slate-700 text-sm">${s.name}</div>
+                            </div>
+                            <div id="eval_icon_${s.id}">${val ? '<i class="fas fa-check-circle text-amber-500 text-2xl drop-shadow"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>'}</div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) { c.innerHTML = '<p class="text-red-500 text-sm text-center">Error loading tasks.</p>'; }
+        };
+        window.toggleEval = function(sId, tId) {
+            if(!evalData[sId]) evalData[sId] = {};
+            evalData[sId][tId] = !evalData[sId][tId];
+            let val = evalData[sId][tId];
+            document.getElementById(`eval_card_${sId}`).className = `bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-pointer active:scale-95 transition-all ${val?'bg-amber-50 border-amber-300 shadow-inner':''}`;
+            document.getElementById(`eval_icon_${sId}`).innerHTML = val ? '<i class="fas fa-check-circle text-amber-500 text-2xl drop-shadow"></i>' : '<div class="w-6 h-6 rounded-full border-2 border-slate-300"></div>';
+        };
+        window.saveTaskEvaluations = async function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const dateStr = new Date().toISOString().split('T')[0];
+            showLoading(true, "Submitting Evaluations...");
+            try {
+                await setDoc(getDocRef('task_evaluations', `${cls.id}_${dateStr}`), { classId: cls.id, date: dateStr, records: evalData }, { merge: true });
+                showAlert("Saved", "Evaluations submitted.", "success");
+            } catch(e) { showAlert("Error", "Failed to submit.", "error"); } showLoading(false);
         };
 
-        window.loadSyllabusProgress = async function() {
-            const classConfig = getCurrentClassConfig();
-            const month = document.getElementById('progress-month-select').value;
-            const container = document.getElementById('progress-subjects-list');
-            if(!classConfig || !month) return;
-
-            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-purple-500"></i></div>';
-
+        let trData = {};
+        window.initTrackerView = function() {
+            const cls = getCurrentClassConfig(); if(!cls) return;
+            const sSel = document.getElementById('tracker-subject-select');
+            sSel.innerHTML = '<option value="">-- Choose Subject --</option>';
+            (cls.subjects||[]).forEach(s => sSel.add(new Option(s, s)));
+        };
+        window.loadTrackerStudents = async function() {
+            const cls = getCurrentClassConfig(); 
+            const sub = document.getElementById('tracker-subject-select').value;
+            const c = document.getElementById('tracker-students-list');
+            if(!sub || !cls) { c.innerHTML = ''; return; }
+            c.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div>';
             try {
-                const sylDoc = await getDoc(getSyllabusDoc(classConfig.id));
+                const ds = new Date().toISOString().split('T')[0];
+                const snap = await getDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`));
+                trData = snap.exists() ? snap.data().students : {};
+                
+                if(AppState.students.length===0) c.innerHTML = '<div class="text-center text-sm text-slate-400">No students.</div>';
+                else {
+                    c.innerHTML = AppState.students.map(s => {
+                        let stat = trData[s.id] || 'pending';
+                        let bg = stat==='asked'?'bg-indigo-50 border-indigo-300 shadow-inner':stat==='absent'?'bg-red-50 border-red-200 opacity-75 shadow-inner':'bg-white border-slate-200';
+                        let ic = stat==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl drop-shadow"></i>':stat==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl drop-shadow"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+                        return `
+                        <div onclick="cycleTrStat('${s.id}')" id="tr_c_${s.id}" class="flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all ${bg} active:scale-95 shadow-sm">
+                            <div class="flex gap-4 items-center">
+                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 shadow-sm">${s.rollNo}</div>
+                                <div class="font-bold text-sm text-slate-700">${s.name}</div>
+                            </div>
+                            <div id="tr_i_${s.id}">${ic}</div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch(e) { c.innerHTML='<p class="text-red-500 text-sm">Error</p>'; }
+        };
+        window.cycleTrStat = function(sid) {
+            let cur = trData[sid] || 'pending', nxt = cur==='asked'?'absent':cur==='absent'?'pending':'asked';
+            trData[sid] = nxt;
+            document.getElementById(`tr_c_${sid}`).className = "flex justify-between items-center p-4 border rounded-xl cursor-pointer select-none transition-all active:scale-95 shadow-sm " + (nxt==='asked'?'bg-indigo-50 border-indigo-300 shadow-inner':nxt==='absent'?'bg-red-50 border-red-200 opacity-75 shadow-inner':'bg-white border-slate-200');
+            document.getElementById(`tr_i_${sid}`).innerHTML = nxt==='asked'?'<i class="fas fa-check-circle text-indigo-500 text-xl drop-shadow"></i>':nxt==='absent'?'<i class="fas fa-times-circle text-red-400 text-xl drop-shadow"></i>':'<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>';
+        };
+        window.saveDailyTracking = async function() {
+            const cls = getCurrentClassConfig(); const sub = document.getElementById('tracker-subject-select').value;
+            if(!cls || !sub) return;
+            const ds = new Date().toISOString().split('T')[0];
+            showLoading(true, "Saving Q&A Data...");
+            try {
+                await setDoc(getDocRef('daily_tracking', `${cls.id}_${ds}_${sub.replace(/\s+/g,'_')}`), { date: ds, subject: sub, classId: cls.id, students: trData, updatedAt: ds });
+                showAlert("Saved", "Daily tracking saved.", "success");
+            } catch(e) { showAlert("Error", "Failed to save.", "error");} showLoading(false);
+        };
+
+        window.initSyllabusView = function() {
+            const mSel = document.getElementById('user-syllabus-month');
+            mSel.innerHTML = '';
+            getActiveMonthsList().forEach(m => mSel.add(new Option(m, m)));
+            loadUserSyllabus();
+        };
+        window.loadUserSyllabus = async function() {
+            const cls = getCurrentClassConfig(); 
+            const month = document.getElementById('user-syllabus-month').value;
+            const container = document.getElementById('user-syllabus-list-container');
+            if(!cls || !month) return;
+            
+            container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin text-purple-500"></i></div>';
+            try {
+                const sylDoc = await getDoc(getDocRef('config', 'syllabus_'+cls.id));
                 const targetData = (sylDoc.exists() ? sylDoc.data()[month] : {}) || {};
                 
-                const progDocId = `${classConfig.id}_${month.replace(/\s+/g,'_')}`;
-                const progDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'syllabus_tracking', progDocId));
+                const progDocId = `${cls.id}_${month.replace(/\s+/g,'_')}`;
+                const progDoc = await getDoc(getDocRef('syllabus_tracking', progDocId));
                 const progressData = (progDoc.exists() ? progDoc.data().completed : {}) || {};
 
-                container.innerHTML = '';
-                const subjects = classConfig.subjects || [];
-                
-                if(subjects.length === 0) {
-                    container.innerHTML = '<p class="text-sm text-slate-500 text-center">No subjects found.</p>';
-                    return;
-                }
+                if(!cls.subjects || cls.subjects.length === 0) { container.innerHTML = '<p class="text-sm text-slate-500 text-center">No subjects found.</p>'; return; }
 
-                subjects.forEach((s, idx) => {
+                container.innerHTML = '';
+                cls.subjects.forEach((s, idx) => {
                     const target = targetData[s] || '0';
                     const completed = progressData[s] || '0';
-                    
-                    let pct = 0;
-                    if(parseInt(target) > 0) {
-                        pct = Math.min(100, Math.round((parseInt(completed) / parseInt(target)) * 100));
-                    }
+                    let pct = parseInt(target) > 0 ? Math.min(100, Math.round((parseInt(completed) / parseInt(target)) * 100)) : 0;
 
                     container.innerHTML += `
                         <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                             <div class="flex justify-between items-center mb-3">
                                 <div class="font-bold text-[#0f172a]">${s}</div>
-                                <div class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">Target: Lesson ${target}</div>
+                                <div class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">Target: Lesson ${target}</div>
                             </div>
-                            
                             <div class="flex items-center gap-3 mb-3">
-                                <span class="text-xs font-bold text-slate-400 uppercase">Completed:</span>
-                                <input type="number" id="prog_comp_${idx}" value="${completed}" data-subject="${s}" class="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-purple-500">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Completed Lesson:</span>
+                                <input type="number" id="prog_comp_${idx}" value="${completed}" class="w-16 bg-slate-50 border border-slate-300 rounded px-2 py-1 text-sm text-center outline-none focus:border-purple-500 font-bold">
                             </div>
-
                             <div class="w-full bg-slate-100 rounded-full h-2 mb-1 overflow-hidden">
                                 <div class="bg-purple-500 h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
                             </div>
                             <div class="text-right text-[10px] font-bold text-slate-400">${pct}% to target</div>
-                        </div>
-                    `;
+                        </div>`;
                 });
-
-            } catch(e) {
-                console.error(e);
-                container.innerHTML = '<p class="text-sm text-red-500 text-center">Error loading progress.</p>';
-            }
+            } catch(e) { container.innerHTML = '<p class="text-sm text-red-500 text-center">Error loading syllabus.</p>'; }
+        };
+        window.saveUserSyllabus = async function() {
+            const cls = getCurrentClassConfig(); const month = document.getElementById('user-syllabus-month').value;
+            if(!cls || !month) return;
+            let compData = {};
+            (cls.subjects||[]).forEach((s, idx) => { const el = document.getElementById(`prog_comp_${idx}`); if(el) compData[s] = el.value; });
+            const progDocId = `${cls.id}_${month.replace(/\s+/g,'_')}`;
+            showLoading(true, "Updating Progress...");
+            try {
+                await setDoc(getDocRef('syllabus_tracking', progDocId), { classId: cls.id, month: month, completed: compData, updatedAt: new Date().toISOString() });
+                showAlert("Saved", "Syllabus progress updated.", "success");
+                await loadUserSyllabus(); 
+            } catch(e) { showAlert("Error", "Could not save.", "error"); } showLoading(false);
         };
 
-        window.saveSyllabusProgress = async function() {
-            const classConfig = getCurrentClassConfig();
-            const month = document.getElementById('progress-month-select').value;
-            if(!classConfig || !month) return;
+        window.renderReportsView = function() {
+            const sSel = document.getElementById('report-student-select');
+            sSel.innerHTML = '<option value="">-- Choose Student --</option>';
+            AppState.students.forEach(s => sSel.add(new Option(`${s.rollNo}. ${s.name}`, s.id)));
 
-            const subjects = classConfig.subjects || [];
-            let compData = {};
+            const mSel = document.getElementById('report-month-select');
+            mSel.innerHTML = '';
             
-            subjects.forEach((s, idx) => {
-                const el = document.getElementById(`prog_comp_${idx}`);
-                if(el) compData[s] = el.value;
-            });
-
-            const progDocId = `${classConfig.id}_${month.replace(/\s+/g,'_')}`;
-            showLoading(true);
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'syllabus_tracking', progDocId), {
-                    classId: classConfig.id,
-                    month: month,
-                    completed: compData,
-                    updatedAt: new Date().toISOString()
-                });
-                showAlert("Saved", "Syllabus progress updated.", "success");
-                await loadSyllabusProgress();
-            } catch(e) {
-                console.error(e);
-                showAlert("Error", "Could not save progress.", "error");
+            const date = new Date();
+            for(let i=0; i<6; i++) {
+                let d = new Date(date.getFullYear(), date.getMonth() - i, 1);
+                let val = d.toISOString().substring(0, 7); 
+                let label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                mSel.add(new Option(label, val));
             }
+            document.getElementById('report-results-container').classList.add('hidden');
+            document.getElementById('report-empty').classList.remove('hidden');
+        };
+
+        window.loadStudentReport = async function() {
+            const sid = document.getElementById('report-student-select').value;
+            const monthStr = document.getElementById('report-month-select').value; 
+            const cls = getCurrentClassConfig();
+            
+            if(!sid || !monthStr || !cls) { showAlert("Notice", "Select student and month.", "warning"); return; }
+            
+            showLoading(true, "Generating Report...");
+            try {
+                let attP=0, attA=0, attL=0, taskPoints=0, trackCount=0;
+
+                const attQ = await getDocs(getPublicRef('attendance'));
+                attQ.forEach(doc => {
+                    let d = doc.data();
+                    if(d.classId === cls.id && doc.id.includes(monthStr) && d.records && d.records[sid]) {
+                        let stat = d.records[sid].status;
+                        if(stat==='present') attP++; else if(stat==='absent') attA++; else if(stat==='leave') attL++;
+                    }
+                });
+
+                const taskQ = await getDocs(getPublicRef('task_evaluations'));
+                taskQ.forEach(doc => {
+                    let d = doc.data();
+                    if(d.classId === cls.id && doc.id.includes(monthStr) && d.records && d.records[sid]) {
+                        for(let taskId in d.records[sid]) {
+                            if(d.records[sid][taskId] === true) {
+                                let tDef = AppState.tasks.find(t => t.id === taskId);
+                                if(tDef) taskPoints += parseInt(tDef.points);
+                            }
+                        }
+                    }
+                });
+
+                const trQ = await getDocs(getPublicRef('daily_tracking'));
+                trQ.forEach(doc => {
+                    let d = doc.data();
+                    if(d.classId === cls.id && d.date && d.date.startsWith(monthStr) && d.students && d.students[sid] === 'asked') {
+                        trackCount++;
+                    }
+                });
+
+                document.getElementById('rep-att-p').innerText = attP; document.getElementById('rep-att-a').innerText = attA; document.getElementById('rep-att-l').innerText = attL;
+                document.getElementById('rep-task-pts').innerText = taskPoints; document.getElementById('rep-track-count').innerText = trackCount;
+                document.getElementById('report-results-container').classList.remove('hidden'); document.getElementById('report-empty').classList.add('hidden');
+            } catch(e) { console.error(e); showAlert("Error", "Could not generate report.", "error"); }
             showLoading(false);
         };
-
     </script>
 </body>
 </html>
