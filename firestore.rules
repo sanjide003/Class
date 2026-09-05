@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // BUILD MODE ONLY.
+    // The three pages currently have no login/password, so Firestore cannot know
+    // whether a request came from Admin, Teacher, or Student. Open access is the
+    // only rule set that lets all three build-mode pages work with the legacy data.
+    // Do NOT use these rules once the public site is shared.
+    match /madrasa/public/data/{collectionId}/{documentId} {
+      allow read, write: if true;
+    }
+
+    // The Student portal may optionally read announcements from this collection.
+    match /announcements/{documentId} {
+      allow read, write: if true;
+    }
+
+    // No other Firestore paths are exposed by this build.
+  }
+}
