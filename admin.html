@@ -524,7 +524,7 @@
                 updateUIForMode();
             } catch (e) {
                 console.error("Database Error:", e);
-                showAlert("Database Error", "Firestore rules/configuration പരിശോധിക്കുക.", "error");
+                showAlert("Database Error", `Firestore connection failed: ${e.code || e.message}. Rules publish ചെയ്തോ എന്ന് പരിശോധിക്കുക.`, "error");
             } finally { showLoading(false); }
         }
         initApp();
