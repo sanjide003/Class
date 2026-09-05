@@ -1,40 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function user() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function active() { return signedIn() && user().status == 'active'; }
-    function admin() { return active() && (user().role == 'super_admin' || user().role == 'admin'); }
-    function assigned(classId) { return active() && user().role == 'teacher' && classId in user().assignedClassIds; }
-    function member(inst) { return active() && user().institutionId == inst; }
-    match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.role == 'pending' && request.resource.data.status == 'pending';
-      allow read: if signedIn() && (request.auth.uid == uid || admin());
-      allow update: if admin() || (request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
-      allow delete: if admin();
-    }
-    match /institutions/{inst} {
-      allow read: if member(inst);
-      allow create, update, delete: if admin() && user().institutionId == inst;
-      match /classes/{classId} { allow read: if member(inst); allow write: if admin(); }
-      match /students/{studentId} {
-        allow read: if admin() || assigned(resource.data.classId) || (active() && user().role == 'student' && resource.data.linkedUserId == request.auth.uid);
-        allow create, update, delete: if admin();
-      }
-      match /attendance/{recordId} {
-        allow read: if admin() || assigned(resource.data.classId);
-        allow create, update: if admin() || (assigned(request.resource.data.classId) && request.resource.data.updatedBy == request.auth.uid);
-        allow delete: if admin();
-      }
-      match /studentAttendance/{recordId} {
-        allow read: if admin() || assigned(resource.data.classId) || (active() && user().role == 'student' && get(/databases/$(database)/documents/institutions/$(inst)/students/$(resource.data.studentId)).data.linkedUserId == request.auth.uid);
-        allow create, update: if admin() || (assigned(request.resource.data.classId) && request.resource.data.updatedBy == request.auth.uid);
-        allow delete: if admin();
-      }
-      match /tasks/{id} { allow read: if member(inst); allow create, update: if admin() || assigned(request.resource.data.classId); allow delete: if admin(); }
-      match /syllabus/{id} { allow read: if member(inst); allow create, update: if admin() || assigned(request.resource.data.classId); allow delete: if admin(); }
-      match /announcements/{id} { allow read: if member(inst); allow create, update, delete: if admin(); }
-      match /auditLogs/{id} { allow read: if admin(); allow create: if active() && request.resource.data.actorId == request.auth.uid; allow update, delete: if false; }
+    // DEVELOPMENT ONLY: authentication is intentionally disabled while the app is built.
+    // Replace these rules before sharing the public GitHub Pages links.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
