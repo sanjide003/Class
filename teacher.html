@@ -29,8 +29,6 @@
     </style>
 </head>
 <body class="text-slate-800 antialiased overflow-x-hidden">
-    <div class="bg-amber-100 text-amber-900 text-center text-xs font-bold py-2">BUILD MODE — Login/security പിന്നീട് ചേർക്കും</div>
-
     <!-- Global App State -->
     <script>
         const AppState = {
@@ -49,7 +47,7 @@
             <!-- Logo & Title -->
             <div class="flex items-center gap-3">
                 <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative shadow-sm">
-                    <span id="app-logo-fallback">നൂർ</span>
+                    <span id="app-logo-fallback">NA</span>
                     <img id="app-header-logo" src="" class="w-full h-full object-cover hidden absolute inset-0">
                 </div>
                 <div>
@@ -59,19 +57,6 @@
             </div>
 
             <div class="flex items-center gap-4 relative">
-                <!-- Build mode: Teacher page does not show the Admin switch. -->
-                <div class="hidden">
-                    <label for="mode-toggle" class="flex items-center cursor-pointer">
-                        <div class="relative">
-                            <input type="checkbox" id="mode-toggle" class="sr-only" onchange="toggleAppMode(this.checked)">
-                            <div class="block bg-slate-200 w-14 h-8 rounded-full transition-colors" id="toggle-bg"></div>
-                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform flex items-center justify-center shadow" id="toggle-dot">
-                                <i class="fas fa-user text-xs text-slate-500" id="toggle-icon"></i>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-
                 <!-- Menu Button (Hamburger) -->
                 <button onclick="toggleMenu()" id="menu-btn" class="text-slate-700 hover:text-[#0f172a] focus:outline-none p-2 bg-slate-100 rounded-md transition-colors relative z-50">
                     <i class="fas fa-bars text-xl"></i>
@@ -325,25 +310,24 @@
     <script type="module">
         import { db } from "./firebase-config.js";
         import { doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Build stage: this page deliberately has no login or password flow.
-        let currentUser = { uid: "build-mode" };
+        // This workspace intentionally opens without a sign-in or password step.
 
         const ENGLISH_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
         const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-        const getPublicRef = (colName) => collection(db, 'madrasa', 'public', 'data', colName);
-        const getDocRef = (type, id) => doc(db, 'madrasa', 'public', 'data', type, id);
+        const getPublicRef = (colName) => collection(db, 'madrasa', 'public', colName);
+        const getDocRef = (type, id) => doc(db, 'madrasa', 'public', type, id);
 
         async function initApp() {
             showLoading(true, "Loading class data...");
             try {
                 await loadGlobalConfig();
                 setupGlobalClassSelector();
-                updateUIForMode();
+                updateTeacherWorkspace();
             } catch (e) {
                 console.error("Database Error:", e);
-                showAlert("Database Error", `Firestore connection failed: ${e.code || e.message}. Rules publish ചെയ്തോ എന്ന് പരിശോധിക്കുക.`, "error");
+                showAlert("Database Error", `Firestore connection failed: ${e.code || e.message}. Please verify that the Firestore rules have been published.`, "error");
             } finally { showLoading(false); }
         }
         initApp();
@@ -390,43 +374,15 @@
 
         };
 
-        window.toggleAppMode = function(isAdmin) {
-            AppState.mode = isAdmin ? 'admin' : 'user';
-            const dot = document.getElementById('toggle-dot');
-            const bg = document.getElementById('toggle-bg');
-            const icon = document.getElementById('toggle-icon');
-
-            if(isAdmin) {
-                dot.classList.add('translate-x-6');
-                bg.classList.replace('bg-slate-200', 'bg-[#0f172a]');
-                icon.className = 'fas fa-shield-alt text-xs text-[#0f172a]';
-            } else {
-                dot.classList.remove('translate-x-6');
-                bg.classList.replace('bg-[#0f172a]', 'bg-slate-200');
-                icon.className = 'fas fa-user text-xs text-slate-500';
+        function updateTeacherWorkspace() {
+            document.getElementById('menu-user').classList.remove('hidden');
+            if (!AppState.config.classes || AppState.config.classes.length === 0) {
+                showAlert("Classes not configured", "An administrator must add a class and students before teaching records can be created.", "info");
+                document.getElementById('class-selector-container').classList.add('hidden');
+                return;
             }
-            updateUIForMode();
-            const menu = document.getElementById('dropdown-menu');
-            if(menu && !menu.classList.contains('scale-0')) toggleMenu();
-        };
-
-        function updateUIForMode() {
-            if (AppState.mode === 'admin') {
-                const adminMenu = document.getElementById('menu-admin'); if (adminMenu) adminMenu.classList.remove('hidden');
-                document.getElementById('menu-user').classList.add('hidden');
-                document.getElementById('class-selector-container').classList.remove('hidden');
-                navigate('view-admin-setup');
-            } else {
-                const adminMenu = document.getElementById('menu-admin'); if (adminMenu) adminMenu.classList.add('hidden');
-                document.getElementById('menu-user').classList.remove('hidden');
-                if (!AppState.config.classes || AppState.config.classes.length === 0) {
-                    showAlert("Welcome!", "Please switch to Admin mode to setup classes.", "info");
-                    document.getElementById('class-selector-container').classList.add('hidden');
-                } else {
-                    document.getElementById('class-selector-container').classList.remove('hidden');
-                    navigate('view-home');
-                }
-            }
+            document.getElementById('class-selector-container').classList.remove('hidden');
+            navigate('view-home');
         }
 
         window.changeGlobalClass = async function(classId) {
