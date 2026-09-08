@@ -12,7 +12,7 @@
 </head>
 <body class="text-slate-800">
   <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-    <div class="mx-auto flex max-w-md items-center justify-between px-4 py-3"><a href="index.html" class="flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-violet-600 text-xs font-bold text-white">NA</span><span><h1 id="title" class="font-bold tracking-wide">NOORUN ALA NOOR</h1><p class="text-[10px] font-semibold tracking-wider text-slate-500">STUDENT PORTAL</p></span></a><a href="index.html" class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600">All portals</a></div>
+    <div class="mx-auto flex max-w-md items-center px-4 py-3"><a href="index.html" class="flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-violet-600 text-xs font-bold text-white">NA</span><span><h1 id="title" class="font-bold tracking-wide">NOORUN ALA NOOR</h1><p class="text-[10px] font-semibold tracking-wider text-slate-500">STUDENT PORTAL</p></span></a></div>
   </header>
   <main class="mx-auto max-w-md p-4 pb-24">
     <section id="choose" class="card mt-4">
@@ -28,8 +28,8 @@
     import { collection, doc, getDoc, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
     const $ = id => document.getElementById(id);
     const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-    const ref = name => collection(db, 'madrasa', 'public', 'data', name);
-    const documentRef = (name, id) => doc(db, 'madrasa', 'public', 'data', name, id);
+    const ref = name => collection(db, 'madrasa', 'public', name);
+    const documentRef = (name, id) => doc(db, 'madrasa', 'public', name, id);
     const state = { config:{classes:[]}, students:[], student:null, classInfo:null };
     const empty = message => `<div class="card text-center text-sm text-slate-500">${esc(message)}</div>`;
     function showMessage(message) { const node = $('selection-message'); node.textContent = message; node.classList.toggle('hidden', !message); }
