@@ -29,8 +29,6 @@
     </style>
 </head>
 <body class="text-slate-800 antialiased overflow-x-hidden">
-    <div class="bg-amber-100 text-amber-900 text-center text-xs font-bold py-2">BUILD MODE — Login/security പിന്നീട് ചേർക്കും</div>
-
     <!-- Global App State -->
     <script>
         const AppState = {
@@ -49,7 +47,7 @@
             <!-- Logo & Title -->
             <div class="flex items-center gap-3">
                 <div id="app-logo-container" class="w-10 h-10 bg-[#f4eadd] rounded-lg flex items-center justify-center text-[#7c2d12] font-bold text-xl border border-[#e5d5c5] overflow-hidden shrink-0 relative shadow-sm">
-                    <span id="app-logo-fallback">നൂർ</span>
+                    <span id="app-logo-fallback">NA</span>
                     <img id="app-header-logo" src="" class="w-full h-full object-cover hidden absolute inset-0">
                 </div>
                 <div>
@@ -59,7 +57,7 @@
             </div>
 
             <div class="flex items-center gap-4 relative">
-                <!-- Admin page stays in Admin mode during build. -->
+                <!-- This portal is dedicated to administration workflows. -->
                 <div class="hidden">
                     <label for="mode-toggle" class="flex items-center cursor-pointer">
                         <div class="relative">
@@ -506,8 +504,7 @@
     <script type="module">
         import { db } from "./firebase-config.js";
         import { doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Build stage: this page deliberately has no login or password flow.
-        let currentUser = { uid: "build-mode" };
+        // This workspace intentionally opens without a sign-in or password step.
 
         const ENGLISH_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const ARABIC_MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"];
@@ -524,7 +521,7 @@
                 updateUIForMode();
             } catch (e) {
                 console.error("Database Error:", e);
-                showAlert("Database Error", `Firestore connection failed: ${e.code || e.message}. Rules publish ചെയ്തോ എന്ന് പരിശോധിക്കുക.`, "error");
+                showAlert("Database Error", `Firestore connection failed: ${e.code || e.message}. Please verify that the Firestore rules have been published.`, "error");
             } finally { showLoading(false); }
         }
         initApp();
