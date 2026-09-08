@@ -1,11 +1,49 @@
 rules_version = '2';
+
+// This app intentionally has no sign-in experience. Firestore cannot identify
+// an administrator, teacher, or student without authentication, so these rules
+// provide open access only to the application's dedicated data namespace.
+// They also reject unknown collections and malformed student documents.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // BUILD MODE: no authentication is used yet. This temporary rule prevents
-    // the Database Error shown while the Admin/Teacher/Student pages are built.
-    // Before public use, replace it with login-based role rules.
-    match /{document=**} {
-      allow read, write: if true;
+    function isText(value, maximumLength) {
+      return value is string && value.size() <= maximumLength;
+    }
+
+    // Client references use /madrasa/public/{collectionId}/{documentId}.
+    // `madrasa` is the root collection and `public` is its single document.
+    match /madrasa/public/config/{documentId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.size() <= 25;
+      allow delete: if true;
+    }
+
+    match /madrasa/public/students/{studentId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['classId', 'name', 'rollNo'])
+        && request.resource.data.classId is string
+        && isText(request.resource.data.classId, 100)
+        && isText(request.resource.data.name, 120)
+        && request.resource.data.rollNo is int
+        && request.resource.data.rollNo > 0
+        && request.resource.data.rollNo <= 100000;
+      allow delete: if true;
+    }
+
+    match /madrasa/public/attendance/{documentId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['classId', 'date', 'records'])
+        && isText(request.resource.data.classId, 100)
+        && request.resource.data.date is string
+        && request.resource.data.records is map;
+      allow delete: if true;
+    }
+
+    match /madrasa/public/{collectionId}/{documentId} {
+      allow read: if collectionId in ['task_evaluations', 'daily_tracking', 'syllabus_tracking', 'announcements'];
+      allow create, update: if collectionId in ['task_evaluations', 'daily_tracking', 'syllabus_tracking', 'announcements']
+        && request.resource.data.size() <= 25;
+      allow delete: if collectionId in ['task_evaluations', 'daily_tracking', 'syllabus_tracking', 'announcements'];
     }
   }
 }
